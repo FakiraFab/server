@@ -4,6 +4,10 @@ const connectDb = require("./config/db");
 const productRoutes = require("./routes/productRoutes");
 const errorHandler = require("./middleware/errorHandler");
 
+const product = require("./models/Product");
+const category = require("./models/Category");
+const inquiry = require("./models/Inquiry");
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -11,7 +15,7 @@ dotenv.config();
 const app = express();
 
 // Connect to the database
-//connectDb();
+connectDb();
 
 // Middleware to parse JSON requests
 app.use(express.json());
