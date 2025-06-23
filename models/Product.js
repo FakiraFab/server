@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, "Product name cannot exceed 100 characters"],
     index: true,
+    
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,

@@ -6,8 +6,9 @@ const categorySchema = new mongoose.Schema({
     required: [true, "Category name is required"],
     trim: true,
     unique: true,
+    index:true,
     maxlength: [50, "Category name cannot exceed 50 characters"],
-    index: true,
+    
   },
   description: {
     type: String,
@@ -35,6 +36,6 @@ categorySchema.pre("save", function (next) {
 });
 
 // Index for fast lookup
-categorySchema.index({ name: 1 });
+// categorySchema.index({ name: 1 });
 
 module.exports = mongoose.model("Category", categorySchema);
