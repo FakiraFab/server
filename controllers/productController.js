@@ -1,9 +1,10 @@
-const Product = require('../models/Product');
-const Category = require('../models/Category');
+const Product = require('../models/product');
+const Category = require('../models/category');
+const productSchema = require('../schemas/productSchemas');
 
 const getProducts = async(req,res,next)=>{
-
     try {
+
         const {page = 1,limit = 10,category,sort = "name"} = req.query;
         const skip = (page-1)*limit; // Calculate the number of documents to skip for example if page is 2 and limit is 10, skip will be 10
         
@@ -65,7 +66,12 @@ const getProductById  = async(req,res,next)=>{
 
 const createProduct = async(req,res,next)=>{
     try {
-        const{category} = req.body;
+        const { error } = productSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ success: false, message: error.details[0].message });
+        }
+
+        const { category } = req.body;
         const categoryExists = await Category.findById(category);
         if (!categoryExists) {
             return res.status(400).json({ success: false, message: 'Category does not exist' });
@@ -85,25 +91,35 @@ const createProduct = async(req,res,next)=>{
 
 const updateProduct = async(req,res,next)=>{
     try {
-        const {category} = req.body;
-        if(category){
+        const { error } = productSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ success: false, message: error.details[0].message });
+        }
+
+        const { category } = req.body;
+        if (category) {
             const categoryExists = await Category.findById(category);
-             if(!categoryExists){
-            return res.status(404).json({ success: false, message: 'Category does not exist' });
+            if (!categoryExists) {
+                return res.status(404).json({ success: false, message: 'Category does not exist' });
+            }
         }
 
-        const product = await Product.findByIdAndUpdate(req.params.id,req.body,{
-            new:true,
-            runValidators: true,
+        const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
         });
-        if(!product){
-            return res.status(404).json({success:false,message:
-                'Product not found'
-            })
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
         }
 
-
-        }
+        res.status(200).json({
+            success: true,
+            data: product
+        });
         
     } catch (error) {
         next(error);
@@ -111,4 +127,24 @@ const updateProduct = async(req,res,next)=>{
 }
 
 
-module.exports = { getProducts ,getProductById , createProduct, updateProduct };
+const deleteProduct = async(req,res,next)=>{
+    try {
+        const product = await Product.findByIdAndDelete(req.params.id);
+        if(!product){
+            return res.status(404).json({success:false,message:
+                'Product not found'
+            })
+        }
+        res.status(200).json({
+            success:true,
+            message:'Product deleted successfully'
+        })
+        
+    } catch (error) {
+        next(error);
+        
+    }
+}
+
+
+module.exports = { getProducts ,getProductById , createProduct, updateProduct,deleteProduct };
