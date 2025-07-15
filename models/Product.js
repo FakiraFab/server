@@ -7,18 +7,28 @@ const productSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, "Product name cannot exceed 100 characters"],
     index: true,
-    
+  },
+  subcategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subcategory',
+    required: [true, 'Subcategory is required'],
+    index: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Category",
-    required: [true, "Category is required"],
+    ref: 'Category',
+    required: [true, 'Category is required'],
     index: true,
   },
   description: {
     type: String,
     required: [true, "Description is required"],
     trim: true,
+  },
+  fullDescription: {
+    type: String,
+    trim: true,
+    default: '',
   },
   price: {
     type: Number,
@@ -29,23 +39,57 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, "Primary image URL is required"],
   },
+  // Multiple angle photos for the product
+  images: [{
+    type: String,
+    required: true,
+  }],
   quantity: {
     type: Number,
     required: [true, "Total quantity is required"],
     min: [0, "Quantity cannot be negative"],
   },
+  // Product specifications
+  specifications: {
+    material: {
+      type: String,
+      default: 'Cotton',
+    },
+    style: {
+      type: String,
+      default: 'Traditional',
+    },
+    length: {
+      type: String,
+      default: '6 meters',
+    },
+    blousePiece: {
+      type: String,
+      default: 'Yes',
+    },
+    designNo: {
+      type: String,
+      default: 'N/A',
+    },
+  },
+  // Color options with multiple images for each variant
   options: [
     {
       color: {
         type: String,
         required: [true, "Color is required"],
-        enum: ["Red", "Blue", "Green", "Black", "White", "Yellow"], // Expand as needed
+        enum: ["Red", "Blue", "Green", "Black", "White", "Yellow", "Mustard", "Coral", "Beige", "Orange", "Pink", "Purple", "Brown", "Gray", "Navy", "Maroon"],
+      },
+      colorCode: {
+        type: String,
+        required: [true, "Color code is required"],
       },
       quantity: {
         type: Number,
         required: [true, "Variant quantity is required"],
         min: [0, "Quantity cannot be negative"],
       },
+      // Multiple images for each color variant (3 different angles)
       imageUrls: [
         {
           type: String,
@@ -75,7 +119,7 @@ productSchema.pre("save", function (next) {
   next();
 });
 
-// Index for fast filtering
-productSchema.index({ category: 1, name: 1 });
+// Update index for fast filtering
+productSchema.index({ category: 1, subcategory: 1, name: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

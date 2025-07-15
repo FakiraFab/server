@@ -5,7 +5,11 @@ const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const subcategoryRoutes = require("./routes/subcategoryRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
+
+
+
 
 // Load environment variables from .env file
 dotenv.config();
@@ -16,13 +20,19 @@ const app = express();
 // Connect to the database
 connectDb();
 
+const cors = require("cors");
+
+app.use(cors({
+  origin: ["http://localhost:5173","http://localhost:5174"],
+}));
+
 // Middleware to parse JSON requests
 app.use(express.json());
 
 //Routes
 // app.use("/api/products", productRoutes);
 // app.use("/api/categories",categoryRoutes);
-// app.use("/api/inquiry",inquiryRoutes);
+// app.use("/api/inquiry",inquiryRoutes); 
 // app.use("/api/admin",adminRoutes);
 
 console.log('Registering route: /api/products');
@@ -33,6 +43,8 @@ console.log('Registering route: /api/inquiry');
 app.use('/api/inquiry', inquiryRoutes);
 console.log('Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
+console.log('Registering route: /api/subcategories');
+app.use('/api/subcategories', subcategoryRoutes);
 // console.log('Registering catch-all route: *');
 // app.all('*', (req, res, next) => {
 //     // Sanitize the URL to prevent path-to-regexp errors

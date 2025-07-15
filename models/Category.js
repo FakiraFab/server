@@ -6,9 +6,8 @@ const categorySchema = new mongoose.Schema({
     required: [true, "Category name is required"],
     trim: true,
     unique: true,
-    index:true,
+    index: true,
     maxlength: [50, "Category name cannot exceed 50 characters"],
-    
   },
   description: {
     type: String,
@@ -19,6 +18,10 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: [true, "Category image URL is required"],
   },
+  subcategories: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subcategory',
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
