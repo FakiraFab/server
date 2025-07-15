@@ -6,8 +6,8 @@ const categorySchema = new mongoose.Schema({
     required: [true, "Category name is required"],
     trim: true,
     unique: true,
-    maxlength: [50, "Category name cannot exceed 50 characters"],
     index: true,
+    maxlength: [50, "Category name cannot exceed 50 characters"],
   },
   description: {
     type: String,
@@ -18,6 +18,10 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: [true, "Category image URL is required"],
   },
+  subcategories: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subcategory',
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
@@ -35,6 +39,6 @@ categorySchema.pre("save", function (next) {
 });
 
 // Index for fast lookup
-categorySchema.index({ name: 1 });
+// categorySchema.index({ name: 1 });
 
 module.exports = mongoose.model("Category", categorySchema);
