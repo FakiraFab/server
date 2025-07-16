@@ -33,9 +33,13 @@ const createSubcategory = catchAsync(async (req, res, next) => {
 
 // Get all subcategories (with optional pagination and population)
 const getAllSubcategories = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 10, parentCategory } = req.query;
+  const { page = 1, limit = 10, parentCategory, category } = req.query;
   const skip = (page - 1) * limit;
-  const filter = parentCategory ? { parentCategory } : {};
+  // Accept both 'parentCategory' and 'category' as filter
+  const filter = {};
+  if (parentCategory) filter.parentCategory = parentCategory;
+  if (category) filter.parentCategory = category;
+
   const subcategories = await Subcategory.find(filter)
     .populate('parentCategory', 'name')
     .skip(skip)
