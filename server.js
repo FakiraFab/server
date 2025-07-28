@@ -21,15 +21,16 @@ const app = express();
 connectDb();
 
 const cors = require("cors");
+app.use(cors());
 
-app.use(cors({
-  origin: ["http://localhost:5173","http://localhost:5174"],
-}));
+// app.use(cors({
+//   origin: ["http://localhost:5173","http://localhost:5174"],
+// }));
 
 // Middleware to parse JSON requests
 app.use(express.json());
 
-;
+
 
 console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
