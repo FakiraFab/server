@@ -6,7 +6,6 @@ const subcategorySchema = new mongoose.Schema({
     required: [true, 'Subcategory name is required'],
     trim: true,
     maxlength: [50, 'Subcategory name cannot exceed 50 characters'],
-    unique: true,
     index: true,
   },
   description: {
@@ -20,6 +19,7 @@ const subcategorySchema = new mongoose.Schema({
     required: [true, 'Parent category is required'],
     index: true,
   },
+
   createdAt: {
     type: Date,
     default: Date.now,
@@ -30,9 +30,11 @@ const subcategorySchema = new mongoose.Schema({
   },
 });
 
+subcategorySchema.index({ name: 1, parentCategory: 1 }, { unique: true });
+
 subcategorySchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('Subcategory', subcategorySchema); 
+module.exports = mongoose.model('Subcategory', subcategorySchema);

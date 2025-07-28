@@ -22,12 +22,21 @@ const createSubcategory = catchAsync(async (req, res, next) => {
   }
 
   // Check for duplicate subcategory name
-  const existing = await Subcategory.findOne({ name });
+  const existing = await Subcategory.findOne({ name, parentCategory });
   if (existing) {
     return next(new AppError(ErrorMessages.RESOURCE_EXISTS('Subcategory'), StatusCodes.CONFLICT));
   }
 
+
+
   const subcategory = await Subcategory.create(req.body);
+  
+  // Add subcategory to parent category's subcategories array if not already there
+  if (!parent.subcategories.includes(subcategory._id)) {
+    parent.subcategories.push(subcategory._id);
+    await parent.save();
+  }
+  
   ResponseHandler.created(res, subcategory, 'Subcategory created successfully');
 });
 
@@ -76,6 +85,7 @@ const getSubcategoryById = catchAsync(async (req, res, next) => {
 // Update a subcategory by ID
 const updateSubcategory = catchAsync(async (req, res, next) => {
   const { error } = subcategorySchema.validate(req.body);
+  console.log(req.body);
   if (error) {
     return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
   }
@@ -114,4 +124,4 @@ module.exports = {
   getSubcategoryById,
   updateSubcategory,
   deleteSubcategory,
-}; 
+};
