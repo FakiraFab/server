@@ -8,7 +8,7 @@ router.get('/', getProducts);
  
 router.get('/:id', validateParams(), getProductById);
 router.post('/', createProduct);
-router.put('/:id', validateParams(), updateProduct);
+router.patch('/:id', validateParams(), updateProduct);
 router.delete('/:id', validateParams(), deleteProduct);
 
 module.exports = router;

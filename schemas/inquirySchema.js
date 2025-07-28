@@ -1,92 +1,82 @@
 const Joi = require('joi');
 
 const inquirySchema = Joi.object({
-  fullName: Joi.string()
-    .trim()
-    .max(100)
-    .required()
-    .messages({
-      'string.base': 'Full name must be a string',
-      'string.empty': 'Full name is required',
-      'string.max': 'Full name cannot exceed 100 characters',
-    }),
-
-  phoneNumber: Joi.string()
-    .pattern(/^\+?[1-9]\d{1,14}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Please enter a valid phone number',
-      'string.empty': 'Phone number is required',
-    }),
-
-  buyOption: Joi.string()
-    .valid('Personal', 'Wholesale', 'Other')
-    .required()
-    .messages({
-      'any.only': 'Buy option must be one of: Personal, Wholesale, or Other',
-      'any.required': 'Buy option is required',
-    }),
-
-  location: Joi.string()
-    .trim()
-    .max(300)
-    .required()
-    .messages({
-      'string.base': 'Location must be a string',
-      'string.empty': 'Location is required',
-      'string.max': 'Location cannot exceed 300 characters',
-    }),
-
-  quantity: Joi.number()
-    .min(1)
-    .required()
-    .messages({
-      'number.base': 'Quantity must be a number',
-      'number.min': 'Quantity must be at least 1',
-      'any.required': 'Quantity is required',
-    }),
-
-  companyName: Joi.string()
-    .trim()
-    .when('buyOption', {
-      is: 'Wholesale',
-      then: Joi.required(),
-      otherwise: Joi.optional(),
-    })
-    .messages({
-      'string.empty': 'Company name is required for wholesale inquiries',
-    }),
-
-  product: Joi.string()
-    .regex(/^[0-9a-fA-F]{24}$/)
-    .required()
-    .messages({
-      'string.pattern.base': 'Invalid product ID format',
-      'any.required': 'Product is required',
-    }),
-
-  variant: Joi.string()
-    .valid('Red', 'Blue', 'Green', 'Black', 'White', 'Yellow', '')
-    .default('')
-    .messages({
-      'any.only': 'Invalid variant color',
-    }),
-
-  message: Joi.string()
-    .trim()
-    .max(500)
-    .optional()
-    .messages({
-      'string.max': 'Message cannot exceed 500 characters',
-    }),
-
-  adminNotes: Joi.string()
-    .trim()
-    .max(500)
-    .optional()
-    .messages({
-      'string.max': 'Admin notes cannot exceed 500 characters',
-    }),
+  userName: Joi.string().trim().required().max(100).messages({
+    'string.base': 'Full name must be a string',
+    'string.empty': 'Full name is required',
+    'string.max': 'Full name cannot exceed 100 characters',
+    'any.required': 'Full name is required',
+  }),
+  userEmail: Joi.string().trim().email().required().messages({
+    'string.base': 'Email must be a string',
+    'string.empty': 'Email is required',
+    'string.email': 'Please enter a valid email address',
+    'any.required': 'Email is required',
+  }),
+  whatsappNumber: Joi.string().trim().required().pattern(/^\+?[1-9]\d{1,14}$/).messages({
+    'string.base': 'WhatsApp number must be a string',
+    'string.empty': 'WhatsApp number is required',
+    'string.pattern.base': 'Please enter a valid WhatsApp number',
+    'any.required': 'WhatsApp number is required',
+  }),
+  buyOption: Joi.string().valid('Personal', 'Wholesale', 'Other').required().messages({
+    'string.base': 'Buy option must be a string',
+    'any.only': 'Buy option must be one of Personal, Wholesale, Other',
+    'any.required': 'Buy option is required',
+  }),
+  location: Joi.string().trim().required().max(300).messages({
+    'string.base': 'Location must be a string',
+    'string.empty': 'Location is required',
+    'string.max': 'Location cannot exceed 300 characters',
+    'any.required': 'Location is required',
+  }),
+  quantity: Joi.number().integer().min(1).required().messages({
+    'number.base': 'Quantity must be a number',
+    'number.integer': 'Quantity must be an integer',
+    'number.min': 'Quantity must be at least 1',
+    'any.required': 'Quantity is required',
+  }),
+  companyName: Joi.string().trim().max(100).when('buyOption', {
+    is: 'Wholesale',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }).messages({
+    'string.base': 'Company name must be a string',
+    'string.max': 'Company name cannot exceed 100 characters',
+    'any.required': 'Company name is required for wholesale inquiries',
+  }),
+  productId: Joi.string().hex().length(24).required().messages({
+    'string.base': 'Product ID must be a string',
+    'string.hex': 'Product ID must be a valid ObjectId',
+    'string.length': 'Product ID must be 24 characters long',
+    'any.required': 'Product ID is required',
+  }),
+  productName: Joi.string().trim().required().max(200).messages({
+    'string.base': 'Product name must be a string',
+    'string.empty': 'Product name is required',
+    'string.max': 'Product name cannot exceed 200 characters',
+    'any.required': 'Product name is required',
+  }),
+  productImage: Joi.string().trim().max(1000).allow('').optional().messages({
+    'string.base': 'Product image must be a string',
+    'string.max': 'Product image URL cannot exceed 1000 characters',
+  }),
+  variant: Joi.string().trim().max(50).allow('').optional().messages({
+    'string.base': 'Variant must be a string',
+    'string.max': 'Variant cannot exceed 50 characters',
+  }),
+  message: Joi.string().trim().max(500).allow('').optional().messages({
+    'string.base': 'Message must be a string',
+    'string.max': 'Message cannot exceed 500 characters',
+  }),
+  status: Joi.string().valid('Pending', 'Contacted', 'Closed').optional().messages({
+    'string.base': 'Status must be a string',
+    'any.only': 'Status must be one of Pending, Contacted, Closed',
+  }),
+  adminNotes: Joi.string().trim().max(500).allow('').optional().messages({
+    'string.base': 'Admin notes must be a string',
+    'string.max': 'Admin notes cannot exceed 500 characters',
+  }),
 });
 
 module.exports = inquirySchema;

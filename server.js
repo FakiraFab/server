@@ -29,11 +29,7 @@ app.use(cors({
 // Middleware to parse JSON requests
 app.use(express.json());
 
-//Routes
-// app.use("/api/products", productRoutes);
-// app.use("/api/categories",categoryRoutes);
-// app.use("/api/inquiry",inquiryRoutes); 
-// app.use("/api/admin",adminRoutes);
+;
 
 console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
@@ -45,12 +41,7 @@ console.log('Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
 console.log('Registering route: /api/subcategories');
 app.use('/api/subcategories', subcategoryRoutes);
-// console.log('Registering catch-all route: *');
-// app.all('*', (req, res, next) => {
-//     // Sanitize the URL to prevent path-to-regexp errors
-//     const sanitizedUrl = req.originalUrl.replace(/:/g, '%3A');
-//     next(new AppError(`Can't find ${sanitizedUrl} on this server!`, 404));
-// });
+
 // Welcome route
 app.get("/", (req, res) => {
   res.send("API is running...");
