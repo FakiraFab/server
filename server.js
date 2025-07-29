@@ -6,6 +6,7 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const subcategoryRoutes = require("./routes/subcategoryRoutes");
+const workshopRegistrationRoutes = require("./routes/workshopRegistrationRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -42,6 +43,9 @@ console.log('Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
 console.log('Registering route: /api/subcategories');
 app.use('/api/subcategories', subcategoryRoutes);
+console.log('Registering route: /api/workshop-registrations');
+app.use('/api/workshop', workshopRegistrationRoutes);
+
 
 // Welcome route
 app.get("/", (req, res) => {
