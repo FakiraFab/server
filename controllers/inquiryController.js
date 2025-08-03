@@ -1,6 +1,7 @@
 const Inquiry = require("../models/inquiry");
 const Product = require("../models/product");
 const inquirySchema = require("../schemas/inquirySchema");
+const whatsAppService = require("../utils/whatsApp");
 
 const createInquiry = async (req, res, next) => {
   try {
@@ -32,7 +33,7 @@ const createInquiry = async (req, res, next) => {
     }
 
     // Validate variant if provided
-    if (variant && productExists.variants && !productExists.variants.some(v => v.color === variant)) {
+    if (variant && productExists.options && !productExists.options.some(v => v.color === variant)) {
       return res.status(404).json({ success: false, message: "Variant does not exist" });
     }
 
@@ -52,9 +53,18 @@ const createInquiry = async (req, res, next) => {
       message,
     });
 
+    // Send WhatsApp message asynchronously (don't block the response)
+    try {
+      await whatsAppService.sendInquiryThankYouMessage(inquiry, productExists);
+    } catch (whatsappError) {
+      console.error('WhatsApp message sending failed:', whatsappError);
+      // Don't fail the inquiry creation if WhatsApp fails
+    }
+
     res.status(201).json({
       success: true,
       data: inquiry,
+      message: "Inquiry created successfully. You will receive a WhatsApp message shortly."
     });
   } catch (error) {
     next(error);
@@ -146,4 +156,34 @@ const deleteInquiry = async (req, res, next) => {
   }
 };
 
-module.exports = { createInquiry, getInquiries, updateInquiry, deleteInquiry };
+// Test WhatsApp integration
+const testWhatsApp = async (req, res, next) => {
+  try {
+    const { phoneNumber } = req.body;
+    
+    if (!phoneNumber) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Phone number is required for testing" 
+      });
+    }
+
+    const result = await whatsAppService.testConfiguration(phoneNumber);
+    
+    res.status(200).json({
+      success: true,
+      message: "WhatsApp test completed",
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { 
+  createInquiry, 
+  getInquiries, 
+  updateInquiry, 
+  deleteInquiry,
+  testWhatsApp
+};
