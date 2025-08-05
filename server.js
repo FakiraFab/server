@@ -8,6 +8,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const subcategoryRoutes = require("./routes/subcategoryRoutes");
 const workshopRegistrationRoutes = require("./routes/workshopRegistrationRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
+const reelRoutes = require("./routes/reelRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -48,6 +49,8 @@ console.log('Registering route: /api/workshop-registrations');
 app.use('/api/workshop', workshopRegistrationRoutes);
 console.log('Registering route: /api/banners');
 app.use('/api/banners', bannerRoutes);
+console.log('Registering route: /api/reels');
+app.use('/api/reels', reelRoutes);
 
 
 // Welcome route
