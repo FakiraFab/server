@@ -1,6 +1,11 @@
 const Joi = require('joi');
 
 const workshopRegistrationSchema = Joi.object({
+  workshopId: Joi.string().required().messages({
+    'string.base': 'Workshop ID must be a string',
+    'string.empty': 'Workshop ID is required',
+    'any.required': 'Workshop ID is required',
+  }),
   fullName: Joi.string().trim().required().max(100).messages({
     'string.base': 'Full name must be a string',
     'string.empty': 'Full name is required',
@@ -20,7 +25,7 @@ const workshopRegistrationSchema = Joi.object({
     'string.max': 'Institution name cannot exceed 200 characters',
     'any.required': 'Institution name is required',
   }),
-  educationLevel: Joi.string().valid('School', 'College', 'University').required().messages({
+  educationLevel: Joi.string().valid('High School','School', 'College', 'University','Other').required().messages({
     'string.base': 'Education level must be a string',
     'any.only': 'Education level must be one of School, College, or University',
     'any.required': 'Education level is required',
@@ -37,10 +42,8 @@ const workshopRegistrationSchema = Joi.object({
     'string.pattern.base': 'Please enter a valid contact number',
     'any.required': 'Contact number is required',
   }),
-  workshopName: Joi.string().trim().required().messages({
+  workshopName: Joi.string().trim().optional().messages({
     'string.base': 'Workshop name must be a string',
-    'string.empty': 'Workshop name is required',
-    'any.required': 'Workshop name is required',
   }),
   status: Joi.string().valid('Pending', 'Confirmed', 'Cancelled').optional().messages({
     'string.base': 'Status must be a string',

@@ -3,13 +3,12 @@ const Workshop = require("../models/workshop");
 const workshopRegistrationSchema = require("../schemas/workshopRegistrationSchema");
 const workshopSchema = require("../schemas/workshopSchema");
 
-
-
-
 // Get Workshop by ID
 const getWorkshopById = async (req, res, next) => {
   try {
-    const workshop = await Workshop.findById(req.params.id).lean();
+    const workshop = await Workshop.findById(req.params.id)
+      .populate('registrationsCount')
+      .lean();
 
     if (!workshop) {
       return res.status(404).json({ success: false, message: "Workshop not found" });
@@ -53,6 +52,16 @@ const updateWorkshop = async (req, res, next) => {
 // Delete Workshop
 const deleteWorkshop = async (req, res, next) => {
   try {
+    // Check if there are any registrations for this workshop
+    const registrationsCount = await WorkshopRegistration.countDocuments({ workshopId: req.params.id });
+    
+    if (registrationsCount > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot delete workshop. There are ${registrationsCount} registrations associated with this workshop.` 
+      });
+    }
+
     const workshop = await Workshop.findByIdAndDelete(req.params.id);
 
     if (!workshop) {
@@ -65,16 +74,7 @@ const deleteWorkshop = async (req, res, next) => {
   }
 };
 
-
-
-
-
-
-
-
-
 //getAll workshops
-
 const getAllWorkshops = async (req, res, next) => {
     try {
         const { page = 1, limit = 10, sort = "-createdAt" } = req.query;
@@ -83,6 +83,7 @@ const getAllWorkshops = async (req, res, next) => {
             .skip(skip)
             .limit(parseInt(limit))
             .sort(sort)
+            .populate('registrationsCount')
             .lean();
         const total = await Workshop.countDocuments();
         res.status(200).json({
@@ -98,10 +99,6 @@ const getAllWorkshops = async (req, res, next) => {
         next(error);
     }
 };
-
-
-
-
 
 const createWorkshop = async (req, res, next) => {
   try {
@@ -131,8 +128,46 @@ const createRegistration = async (req, res, next) => {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
 
+    // Check if workshop exists
+    const workshop = await Workshop.findById(req.body.workshopId);
+    if (!workshop) {
+      return res.status(404).json({ success: false, message: "Workshop not found" });
+    }
+
+    // Check if workshop is full
+    const registrationsCount = await WorkshopRegistration.countDocuments({ 
+      workshopId: req.body.workshopId,
+      status: { $in: ['Pending', 'Confirmed'] }
+    });
+
+    if (registrationsCount >= workshop.maxParticipants) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Workshop is full. No more registrations can be accepted." 
+      });
+    }
+
+    // Check if user is already registered for this workshop
+    const existingRegistration = await WorkshopRegistration.findOne({
+      workshopId: req.body.workshopId,
+      email: req.body.email
+    });
+
+    if (existingRegistration) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "You are already registered for this workshop." 
+      });
+    }
+
+    // Populate workshop name from the workshop
+    const registrationData = {
+      ...req.body,
+      workshopName: workshop.name
+    };
+
     // Create registration
-    const registration = await WorkshopRegistration.create(req.body);
+    const registration = await WorkshopRegistration.create(registrationData);
 
     res.status(201).json({
       success: true,
@@ -143,20 +178,67 @@ const createRegistration = async (req, res, next) => {
   }
 };
 
+// Get registrations for a specific workshop
+const getRegistrationsByWorkshop = async (req, res, next) => {
+  try {
+    const { workshopId } = req.params;
+    const { page = 1, limit = 10, status, sort = "-createdAt" } = req.query;
+
+    // Check if workshop exists
+    const workshop = await Workshop.findById(workshopId);
+    if (!workshop) {
+      return res.status(404).json({ success: false, message: "Workshop not found" });
+    }
+
+    const skip = (page - 1) * limit;
+    const filter = { workshopId };
+
+    if (status) filter.status = status;
+
+    const registrations = await WorkshopRegistration.find(filter)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort(sort)
+      .lean();
+
+    const total = await WorkshopRegistration.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      data: registrations,
+      workshop: {
+        id: workshop._id,
+        name: workshop.name,
+        maxParticipants: workshop.maxParticipants,
+        currentRegistrations: total
+      },
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getRegistrations = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, status, workshopName, sort = "-createdAt" } = req.query;
+    const { page = 1, limit = 10, status, workshopName, workshopId, sort = "-createdAt" } = req.query;
 
     const skip = (page - 1) * limit;
     const filter = {};
 
     if (status) filter.status = status;
     if (workshopName) filter.workshopName = workshopName;
+    if (workshopId) filter.workshopId = workshopId;
 
     const registrations = await WorkshopRegistration.find(filter)
       .skip(skip)
       .limit(parseInt(limit))
       .sort(sort)
+      .populate('workshopId', 'name dateTime location')
       .lean();
 
     const total = await WorkshopRegistration.countDocuments(filter);
@@ -233,12 +315,12 @@ const deleteRegistration = async (req, res, next) => {
 module.exports = { 
   createWorkshop,
   createRegistration, 
-  getRegistrations, 
+  getRegistrations,
+  getRegistrationsByWorkshop,
   updateRegistration, 
   deleteRegistration,
   getAllWorkshops,
   getWorkshopById,
   updateWorkshop,
   deleteWorkshop
-   
 };

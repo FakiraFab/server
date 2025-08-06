@@ -45,7 +45,7 @@ console.log('Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
 console.log('Registering route: /api/subcategories');
 app.use('/api/subcategories', subcategoryRoutes);
-console.log('Registering route: /api/workshop-registrations');
+console.log('Registering route: /api/workshop');
 app.use('/api/workshop', workshopRegistrationRoutes);
 console.log('Registering route: /api/banners');
 app.use('/api/banners', bannerRoutes);

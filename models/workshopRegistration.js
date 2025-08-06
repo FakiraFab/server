@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const workshopRegistrationSchema = new mongoose.Schema({
+  workshopId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Workshop",
+    required: [true, "Workshop ID is required"],
+  },
   fullName: {
     type: String,
     required: [true, "Full name is required"],
@@ -22,7 +27,7 @@ const workshopRegistrationSchema = new mongoose.Schema({
   educationLevel: {
     type: String,
     required: [true, "Education level is required"],
-    enum: ["School", "College", "University"],
+    enum: ["High School", "School", "College", "University","Other"],
   },
   email: {
     type: String,
@@ -38,7 +43,6 @@ const workshopRegistrationSchema = new mongoose.Schema({
   },
   workshopName: {
     type: String,
-    required: [true, "Workshop name is required"],
     trim: true,
   },
   status: {
@@ -68,6 +72,7 @@ workshopRegistrationSchema.pre("save", function (next) {
 });
 
 // Index for fast queries
+workshopRegistrationSchema.index({ workshopId: 1, status: 1 });
 workshopRegistrationSchema.index({ workshopName: 1, status: 1 });
 
 module.exports = mongoose.model("WorkshopRegistration", workshopRegistrationSchema);
