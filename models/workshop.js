@@ -65,6 +65,25 @@ workshopSchema.pre("save", function (next) {
   next();
 });
 
+// Virtual for registrations count
+workshopSchema.virtual('registrationsCount', {
+  ref: 'WorkshopRegistration',
+  localField: '_id',
+  foreignField: 'workshopId',
+  count: true
+});
+
+// Virtual for registrations
+workshopSchema.virtual('registrations', {
+  ref: 'WorkshopRegistration',
+  localField: '_id',
+  foreignField: 'workshopId'
+});
+
+// Ensure virtuals are included when converting to JSON
+workshopSchema.set('toJSON', { virtuals: true });
+workshopSchema.set('toObject', { virtuals: true });
+
 // Index for fast queries
 workshopSchema.index({ dateTime: 1, status: 1 });
 
