@@ -1,6 +1,6 @@
 const WorkshopRegistration = require("../models/workshopRegistration");
 const Workshop = require("../models/workshop");
-const workshopRegistrationSchema = require("../schemas/workshopRegistrationSchema");
+const { workshopRegistrationSchema, workshopRegistrationUpdateSchema } = require("../schemas/workshopRegistrationSchema");
 const workshopSchema = require("../schemas/workshopSchema");
 
 // Get Workshop by ID
@@ -259,17 +259,21 @@ const getRegistrations = async (req, res, next) => {
 
 const updateRegistration = async (req, res, next) => {
   try {
-    const updates = {};
+    console.log('Registration ID:', req.params.id);
+    console.log('Request body:', req.body);
+    
     const allowedFields = ["status", "specialRequirements"];
-
     const updateData = {};
+    
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
         updateData[key] = req.body[key];
       }
     });
+    
+    console.log('Update data:', updateData);
 
-    const { error } = workshopRegistrationSchema.validate(updateData, {
+    const { error } = workshopRegistrationUpdateSchema.validate(updateData, {
       allowUnknown: true,
       stripUnknown: true,
     });
@@ -278,6 +282,7 @@ const updateRegistration = async (req, res, next) => {
       return res.status(400).json({ success: false, message: error.details[0].message });
     }
 
+    // Update by registration ID (from URL parameter)
     const registration = await WorkshopRegistration.findByIdAndUpdate(
       req.params.id, 
       updateData,
