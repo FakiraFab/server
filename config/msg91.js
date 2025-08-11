@@ -7,13 +7,6 @@ const msg91Config = {
   upiId: process.env.UPI_ID || "your-upi-id@bank"
 };
 
-// Debug logging
-console.log('=== MSG91 Configuration Debug ===');
-console.log('AuthKey:', process.env.AuthKey ? 'SET' : 'NOT SET');
-console.log('MSG91_AUTH_KEY:', process.env.MSG91_AUTH_KEY ? 'SET' : 'NOT SET');
-console.log('Final authKey value:', msg91Config.authKey ? 'SET' : 'NOT SET');
-console.log('AuthKey length:', msg91Config.authKey ? msg91Config.authKey.length : 0);
-console.log('All environment variables starting with "Auth":', Object.keys(process.env).filter(key => key.toLowerCase().includes('auth')));
-console.log('================================');
+
 
 module.exports = msg91Config; 

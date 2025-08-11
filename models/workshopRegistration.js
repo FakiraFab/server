@@ -47,7 +47,7 @@ const workshopRegistrationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "Confirmed", "Cancelled"],
+    enum: ["Pending", "Approved", "Rejected"],
     default: "Pending",
   },
   specialRequirements: {

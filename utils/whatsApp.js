@@ -14,12 +14,7 @@ class WhatsAppService {
    * Validate MSG91 configuration
    */
   validateConfig() {
-    console.log('=== WhatsApp Service Configuration ===');
-    console.log('authKey configured:', !!this.config.authKey);
-    console.log('integratedNumber configured:', !!this.config.integratedNumber);
-    console.log('templateName configured:', !!this.config.templateName);
-    console.log('namespace configured:', !!this.config.namespace);
-    console.log('=====================================');
+   
     
     if (!this.config.authKey) {
       console.warn('AuthKey is not configured. WhatsApp messages will not be sent.');
