@@ -103,6 +103,243 @@ const getProducts = async (req, res, next) => {
   }
 };
 
+// Optimized search products function
+const searchProducts = async (req, res, next) => {
+  try {
+    const { 
+      q = '', 
+      page = 1, 
+      limit = 20, 
+      category, 
+      subcategory, 
+      sort = '-createdAt',
+      minPrice,
+      maxPrice,
+      material,
+      style
+    } = req.query;
+    
+    const skip = (page - 1) * limit;
+    const searchQuery = q.trim();
+
+    // Build search filter
+    const filter = {};
+
+    // Text search using MongoDB text index or regex fallback
+    if (searchQuery) {
+      // Try to use text search first (requires text index)
+      try {
+        // Check if text index exists by attempting text search
+        const textSearchResults = await Product.find(
+          { $text: { $search: searchQuery } },
+          { score: { $meta: "textScore" } }
+        ).limit(1).lean();
+        
+        if (textSearchResults.length > 0) {
+          // Text index exists, use it for better performance
+          filter.$text = { $search: searchQuery };
+        } else {
+          // Fallback to regex search for better compatibility
+          const searchRegex = new RegExp(searchQuery, 'i');
+          filter.$or = [
+            { name: searchRegex },
+            { description: searchRegex },
+            { 'specifications.material': searchRegex },
+            { 'specifications.style': searchRegex },
+            { 'specifications.designNo': searchRegex },
+            { 'options.color': searchRegex }
+          ];
+        }
+      } catch (error) {
+        // Text index doesn't exist, use regex search
+        const searchRegex = new RegExp(searchQuery, 'i');
+        filter.$or = [
+          { name: searchRegex },
+          { description: searchRegex },
+          { 'specifications.material': searchRegex },
+          { 'specifications.style': searchRegex },
+          { 'specifications.designNo': searchRegex },
+          { 'options.color': searchRegex }
+        ];
+      }
+    }
+
+    // Category filter
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        filter.category = category;
+      } else {
+        const categoryDoc = await Category.findOne({ name: category }).select('_id').lean();
+        if (categoryDoc) {
+          filter.category = categoryDoc._id;
+        }
+      }
+    }
+
+    // Subcategory filter
+    if (subcategory && subcategory !== 'All') {
+      if (mongoose.Types.ObjectId.isValid(subcategory)) {
+        filter.subcategory = subcategory;
+      } else {
+        const subcategoryDoc = await Subcategory.findOne({ 
+          name: subcategory, 
+          parentCategory: filter.category 
+        }).select('_id').lean();
+        if (subcategoryDoc) {
+          filter.subcategory = subcategoryDoc._id;
+        }
+      }
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Material filter
+    if (material) {
+      filter['specifications.material'] = new RegExp(material, 'i');
+    }
+
+    // Style filter
+    if (style) {
+      filter['specifications.style'] = new RegExp(style, 'i');
+    }
+
+    // Build sort object
+    let sortObj = {};
+    if (searchQuery && filter.$text) {
+      // If using text search, sort by text score first
+      sortObj = { score: { $meta: "textScore" } };
+    }
+    
+    // Add secondary sort
+    if (sort === '-createdAt') {
+      sortObj.createdAt = -1;
+    } else if (sort === 'createdAt') {
+      sortObj.createdAt = 1;
+    } else if (sort === 'name') {
+      sortObj.name = 1;
+    } else if (sort === '-name') {
+      sortObj.name = -1;
+    } else if (sort === 'price') {
+      sortObj.price = 1;
+    } else if (sort === '-price') {
+      sortObj.price = -1;
+    }
+
+    // Execute search query
+    const products = await Product.find(filter)
+      .populate('category', 'name')
+      .populate('subcategory', 'name')
+      .sort(sortObj)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Product.countDocuments(filter);
+
+    // Get search suggestions for better UX
+    let searchSuggestions = [];
+    if (searchQuery && products.length > 0) {
+      // Get unique materials and styles from search results
+      const materials = [...new Set(products.map(p => p.specifications?.material).filter(Boolean))];
+      const styles = [...new Set(products.map(p => p.specifications?.style).filter(Boolean))];
+      const colors = [...new Set(products.flatMap(p => p.options.map(o => o.color)))];
+      
+      searchSuggestions = {
+        materials: materials.slice(0, 5),
+        styles: styles.slice(0, 5),
+        colors: colors.slice(0, 5)
+      };
+    }
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      total,
+      query: searchQuery,
+      suggestions: searchSuggestions,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+        hasMore: skip + products.length < total
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get search suggestions for autocomplete
+const getSearchSuggestions = async (req, res, next) => {
+  try {
+    const { q = '', limit = 10 } = req.query;
+    const searchQuery = q.trim();
+
+    if (!searchQuery || searchQuery.length < 2) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          suggestions: [],
+          popular: []
+        }
+      });
+    }
+
+    // Get product name suggestions
+    const nameSuggestions = await Product.find({
+      name: { $regex: searchQuery, $options: 'i' }
+    })
+    .select('name')
+    .limit(limit)
+    .lean();
+
+    // Get material suggestions
+    const materialSuggestions = await Product.distinct('specifications.material', {
+      'specifications.material': { $regex: searchQuery, $options: 'i' }
+    });
+
+    // Get style suggestions
+    const styleSuggestions = await Product.distinct('specifications.style', {
+      'specifications.style': { $regex: searchQuery, $options: 'i' }
+    });
+
+    // Get color suggestions
+    const colorSuggestions = await Product.distinct('options.color', {
+      'options.color': { $regex: searchQuery, $options: 'i' }
+    });
+
+    // Get popular search terms (you can enhance this with analytics later)
+    const popularTerms = [
+      'Sarees', 'Dress Materials', 'Silk Fabrics', 'Cotton Fabrics', 
+      'Designer Sarees', 'Wedding Collection', 'Traditional', 'Modern'
+    ];
+
+    const suggestions = [
+      ...nameSuggestions.map(p => ({ type: 'product', value: p.name })),
+      ...materialSuggestions.slice(0, 3).map(m => ({ type: 'material', value: m })),
+      ...styleSuggestions.slice(0, 3).map(s => ({ type: 'style', value: s })),
+      ...colorSuggestions.slice(0, 3).map(c => ({ type: 'color', value: c }))
+    ].slice(0, limit);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        suggestions,
+        popular: popularTerms.filter(term => 
+          term.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 5)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -477,5 +714,7 @@ module.exports = {
   updateProduct, 
   deleteProduct,
   bulkUpdateProducts,
-  getProductsByCategory
+  getProductsByCategory,
+  searchProducts,
+  getSearchSuggestions
 };

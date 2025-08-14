@@ -122,4 +122,24 @@ productSchema.pre("save", function (next) {
 // Update index for fast filtering
 productSchema.index({ category: 1, subcategory: 1, name: 1 });
 
+// Text index for search optimization
+productSchema.index({
+  name: 'text',
+  description: 'text',
+  'specifications.material': 'text',
+  'specifications.style': 'text',
+  'specifications.designNo': 'text',
+  'options.color': 'text'
+}, {
+  weights: {
+    name: 10,           // Highest priority
+    description: 5,      // Medium priority
+    'specifications.material': 3,
+    'specifications.style': 3,
+    'specifications.designNo': 2,
+    'options.color': 2
+  },
+  name: 'product_search_index'
+});
+
 module.exports = mongoose.model("Product", productSchema);
