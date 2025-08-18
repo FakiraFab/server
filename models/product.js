@@ -72,6 +72,13 @@ const productSchema = new mongoose.Schema({
       default: 'N/A',
     },
   },
+  // Unit of measurement for the product (meter or piece)
+  unit: {
+    type: String,
+    enum: ['meter', 'piece'],
+    required: [true, 'Unit of measurement is required'],
+    default: 'piece',
+  },
   // Color options with multiple images for each variant
   options: [
     {
