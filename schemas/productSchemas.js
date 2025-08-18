@@ -128,6 +128,15 @@ const productSchema = Joi.object({
       })
   }).optional(),
 
+  unit: Joi.string()
+    .valid('meter', 'piece')
+    .required()
+    .messages({
+      'string.empty': 'Unit of measurement is required',
+      'any.required': 'Unit of measurement is required',
+      'any.only': 'Unit must be either meter or piece'
+    }),
+
   options: Joi.array()
     .items(
       Joi.object({
@@ -328,6 +337,13 @@ const updateProductSchema = Joi.object({
     blousePiece: Joi.string().valid('Yes', 'No').optional(),
     designNo: Joi.string().max(50).optional().trim()
   }).optional(),
+
+  unit: Joi.string()
+    .valid('meter', 'piece')
+    .optional()
+    .messages({
+      'any.only': 'Unit must be either meter or piece'
+    }),
 
   options: Joi.array()
     .items(
