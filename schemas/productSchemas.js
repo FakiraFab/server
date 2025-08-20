@@ -71,7 +71,6 @@ const productSchema = Joi.object({
     .items(Joi.string().uri().messages({
       'string.uri': 'Each image URL must be a valid URL'
     }))
-    .min(1)
     .optional()
     .messages({
       'array.min': 'At least one image is required'
@@ -189,11 +188,9 @@ const productSchema = Joi.object({
           })
       })
     )
-    .min(1)
-    .required()
+    .optional()
     .messages({
-      'array.min': 'At least one product variant is required',
-      'any.required': 'Product variants are required'
+      'array.min': 'At least one product variant is required when options are provided'
     }),
 
   // Additional fields for better product management
@@ -254,6 +251,8 @@ const productSchema = Joi.object({
         'string.max': 'Each keyword cannot exceed 30 characters'
       })
   }).optional()
+}).or('options', 'images').messages({
+  'object.missing': 'Either options or images must be provided'
 });
 
 // Schema for updating products (all fields optional except ID)
@@ -355,7 +354,6 @@ const updateProductSchema = Joi.object({
         imageUrls: Joi.array().items(Joi.string().uri()).min(1).required()
       })
     )
-    .min(1)
     .optional(),
 
   tags: Joi.array()
@@ -377,6 +375,8 @@ const updateProductSchema = Joi.object({
     metaDescription: Joi.string().max(160).optional().trim(),
     keywords: Joi.array().items(Joi.string().max(30).trim()).max(20).optional()
   }).optional()
+}).or('options', 'images').messages({
+  'object.missing': 'Either options or images must be provided'
 });
 
 // Schema for bulk update operations
