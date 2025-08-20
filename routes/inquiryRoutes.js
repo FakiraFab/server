@@ -5,7 +5,7 @@ const { createInquiry, getInquiries, updateInquiry, deleteInquiry, testWhatsApp 
 
 router.get('/', getInquiries);
 router.post('/', createInquiry);
-router.put('/:id', validateParams(), updateInquiry);
+router.patch('/:id', validateParams(), updateInquiry);
 router.delete('/:id', validateParams(), deleteInquiry);
 router.post('/test-whatsapp', testWhatsApp);
 

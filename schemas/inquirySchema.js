@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const inquirySchema = Joi.object({
+const createInquirySchema = Joi.object({
   userName: Joi.string().trim().required().max(100).messages({
     'string.base': 'Full name must be a string',
     'string.empty': 'Full name is required',
@@ -69,9 +69,9 @@ const inquirySchema = Joi.object({
     'string.base': 'Message must be a string',
     'string.max': 'Message cannot exceed 500 characters',
   }),
-  status: Joi.string().valid('Pending', 'Contacted', 'Closed').optional().messages({
+  status: Joi.string().valid('pending', 'processing', 'completed', 'cancelled').optional().messages({
     'string.base': 'Status must be a string',
-    'any.only': 'Status must be one of Pending, Contacted, Closed',
+    'any.only': 'Status must be one of pending, processing, completed, cancelled',
   }),
   adminNotes: Joi.string().trim().max(500).allow('').optional().messages({
     'string.base': 'Admin notes must be a string',
@@ -79,4 +79,60 @@ const inquirySchema = Joi.object({
   }),
 });
 
-module.exports = inquirySchema;
+const updateInquirySchema = Joi.object({
+  userName: Joi.string().trim().max(100).optional().messages({
+    'string.base': 'Full name must be a string',
+    'string.max': 'Full name cannot exceed 100 characters'
+  }),
+  userEmail: Joi.string().trim().email().optional().messages({
+    'string.base': 'Email must be a string',
+    'string.email': 'Please enter a valid email address'
+  }),
+  whatsappNumber: Joi.string().trim().pattern(/^\+?[1-9]\d{1,14}$/).optional().messages({
+    'string.base': 'WhatsApp number must be a string',
+    'string.pattern.base': 'Please enter a valid WhatsApp number'
+  }),
+  buyOption: Joi.string().valid('Personal', 'Wholesale', 'Other').optional().messages({
+    'string.base': 'Buy option must be a string',
+    'any.only': 'Buy option must be one of Personal, Wholesale, Other'
+  }),
+  location: Joi.string().trim().max(300).optional().messages({
+    'string.base': 'Location must be a string',
+    'string.max': 'Location cannot exceed 300 characters'
+  }),
+  quantity: Joi.number().integer().min(1).optional().messages({
+    'number.base': 'Quantity must be a number',
+    'number.integer': 'Quantity must be an integer',
+    'number.min': 'Quantity must be at least 1'
+  }),
+  companyName: Joi.string().trim().max(100).optional().messages({
+    'string.base': 'Company name must be a string',
+    'string.max': 'Company name cannot exceed 100 characters'
+  }),
+  productName: Joi.string().trim().max(200).optional().messages({
+    'string.base': 'Product name must be a string',
+    'string.max': 'Product name cannot exceed 200 characters'
+  }),
+  productImage: Joi.string().trim().max(1000).allow('').optional().messages({
+    'string.base': 'Product image must be a string',
+    'string.max': 'Product image URL cannot exceed 1000 characters'
+  }),
+  variant: Joi.string().trim().max(50).allow('').optional().messages({
+    'string.base': 'Variant must be a string',
+    'string.max': 'Variant cannot exceed 50 characters'
+  }),
+  message: Joi.string().trim().max(500).allow('').optional().messages({
+    'string.base': 'Message must be a string',
+    'string.max': 'Message cannot exceed 500 characters'
+  }),
+  status: Joi.string().valid('Pending', 'Processing', 'Completed', 'Cancelled').optional().messages({
+    'string.base': 'Status must be a string',
+    'any.only': 'Status must be one of pending, processing, completed, cancelled'
+  }),
+  adminNotes: Joi.string().trim().max(500).allow('').optional().messages({
+    'string.base': 'Admin notes must be a string',
+    'string.max': 'Admin notes cannot exceed 500 characters'
+  })
+});
+
+module.exports = { createInquirySchema, updateInquirySchema };

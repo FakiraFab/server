@@ -441,9 +441,9 @@ const createProduct = async (req, res, next) => {
     // Enhanced validation for options
     const validationErrors = [];
     
-    if (options.length === 0) {
-      validationErrors.push('At least one product variant is required');
-    }
+    // if (options.length === 0) {
+    //   validationErrors.push('At least one product variant is required');
+    // }
 
     options.forEach((option, index) => {
       if (!option.color) {
