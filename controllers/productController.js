@@ -31,8 +31,20 @@ const COLOR_MAP = {
 
 const getProducts = async (req, res, next) => {
   try {
+
+     
+  
     const { page = 1, limit = 10, category: categoryParam, subcategory: subcategoryParam, sort = 'name' } = req.query;
+    
+    // console.log('Query Params:', req.query);
+    // console.log('Category Param:', categoryParam);
+    // console.log('Subcategory Param:', subcategoryParam);
+    // console.log('Page:', page, 'Limit:', limit, 'Sort:', sort);
     const skip = (page - 1) * limit;
+    // example for skip 
+    // if page = 1 and limit = 10 then skip 1-1 = 0 * 10 = 0
+    // if page = 2 and limit = 10 then skip 2-1 = 1 * 10 = 10
+    // if page = 3 and limit = 10 then skip 3-1 = 2 * 10 = 20
 
     const filter = {};
 
@@ -81,6 +93,8 @@ const getProducts = async (req, res, next) => {
       .lean();
 
     const total = await Product.countDocuments(filter);
+
+    
 
     let subCategories = [];
     if (categoryId) {
