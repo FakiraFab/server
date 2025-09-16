@@ -27,6 +27,14 @@ const categorySchema = Joi.object({
       'any.required': 'Category image URL is required',
     }),
 
+  categoryBannerImage:Joi.string().
+  uri()
+  .allow(null,'')
+  .optional()
+  .messages({
+    'string.uri':'Category banner must be a valid URl',
+  }),
+
   createdAt: Joi.date().optional(),
   updatedAt: Joi.date().optional(),
 });

@@ -86,6 +86,21 @@ const productSchema = Joi.object({
       'any.required': 'Quantity is required'
     }),
 
+  color: Joi.string()
+    .valid("Red", "Blue", "Green", "Black", "White", "Yellow", "Mustard", "Coral", "Beige", "Orange", "Pink", "Purple", "Brown", "Gray", "Navy", "Maroon")
+    .required()
+    .messages({
+      'any.required': 'Primary product color is required',
+      'any.only': 'Invalid color selection'
+    }),
+
+  colorCode: Joi.string()
+    .pattern(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+    .optional() // Optional because we'll auto-generate it if not provided
+    .messages({
+      'string.pattern.base': 'Color code must be a valid hex color (e.g., #FF0000)'
+    }),  
+
   specifications: Joi.object({
     material: Joi.string()
       .max(50)
@@ -328,6 +343,21 @@ const updateProductSchema = Joi.object({
       'number.integer': 'Quantity must be an integer',
       'number.min': 'Quantity cannot be negative'
     }),
+   
+  color: Joi.string()
+    .valid("Red", "Blue", "Green", "Black", "White", "Yellow", "Mustard", "Coral", "Beige", "Orange", "Pink", "Purple", "Brown", "Gray", "Navy", "Maroon")
+    .required()
+    .messages({
+      'any.required': 'Primary product color is required',
+      'any.only': 'Invalid color selection'
+    }),
+
+  colorCode: Joi.string()
+    .pattern(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)
+    .optional() // Optional because we'll auto-generate it if not provided
+    .messages({
+      'string.pattern.base': 'Color code must be a valid hex color (e.g., #FF0000)'
+    }),  
 
   specifications: Joi.object({
     material: Joi.string().max(50).optional().trim(),

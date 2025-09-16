@@ -18,6 +18,11 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: [true, "Category image URL is required"],
   },
+  categoryBannerImage : {
+    type : String,
+    required:false,
+    default:null
+  },
   subcategories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Subcategory',

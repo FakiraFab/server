@@ -49,6 +49,17 @@ const productSchema = new mongoose.Schema({
     required: [true, "Total quantity is required"],
     min: [0, "Quantity cannot be negative"],
   },
+  color :{
+    type :String,
+    required:[true,"Primary product color is required"],
+    enum: ["Red", "Blue", "Green", "Black", "White", "Yellow", "Mustard", "Coral", "Beige", "Orange", "Pink", "Purple", "Brown", "Gray", "Navy", "Maroon"],
+
+  },
+  colorCode:{
+    type:String,
+    required:[true,"Primary product color code is required"]
+
+  },
   // Product specifications
   specifications: {
     material: {
