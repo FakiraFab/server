@@ -43,9 +43,22 @@ const createCategory = catchAsync(async (req, res, next) => {
   const { error } = categorySchema.validate(req.body);
   if (error) {
     return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+  
   }
 
-  const existingCategory = await Category.findOne({ name: req.body.name });
+
+  const categoryData = {
+
+    ...req.body,
+    categoryBannerImage :req.body.categoryBannerImage||null
+
+
+  }
+
+
+
+
+  const existingCategory = await Category.findOne({ name: categoryData.name });
   if (existingCategory) {
     return next(new AppError(ErrorMessages.RESOURCE_EXISTS('Category'), StatusCodes.CONFLICT));
   }

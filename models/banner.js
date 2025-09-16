@@ -7,9 +7,13 @@ const bannerSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    image: {
+    imageDesktop: {
       type: String,
       required: true,
+    },
+    imageMobile:{
+      type:String,
+      default:null,
     },
     link: {
       type: String,

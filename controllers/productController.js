@@ -47,21 +47,29 @@ const getProducts = async (req, res, next) => {
     // if page = 3 and limit = 10 then skip 3-1 = 2 * 10 = 20
 
     const filter = {};
+     
 
     let categoryId = null;
-    if (categoryParam) {
+    let categoryDetails = null;
+  if (categoryParam) {
       if (mongoose.Types.ObjectId.isValid(categoryParam)) {
         categoryId = categoryParam;
-        const categoryExists = await Category.findById(categoryId).lean();
-        if (!categoryExists) {
+        // Fetch category details including banner image
+        categoryDetails = await Category.findById(categoryId)
+          .select('name description categoryImage categoryBannerImage')
+          .lean();
+        if (!categoryDetails) {
           return res.status(400).json({ success: false, message: 'Category not found' });
         }
       } else {
-        const category = await Category.findOne({ name: categoryParam }).select('_id').lean();
-        if (!category) {
+        // Fetch category details by name including banner image
+        categoryDetails = await Category.findOne({ name: categoryParam })
+          .select('_id name description categoryImage categoryBannerImage')
+          .lean();
+        if (!categoryDetails) {
           return res.status(400).json({ success: false, message: 'Category not found' });
         }
-        categoryId = category._id;
+        categoryId = categoryDetails._id;
       }
       filter.category = categoryId;
     }
@@ -85,7 +93,7 @@ const getProducts = async (req, res, next) => {
     }
 
     const products = await Product.find(filter)
-      .populate('category', 'name')
+      .populate('category', 'name description categoryImage categoryBannerImage')
       .populate('subcategory', 'name')
       .skip(skip)
       .limit(parseInt(limit))
@@ -105,7 +113,12 @@ const getProducts = async (req, res, next) => {
       success: true,
       data: products,
       total,
-      filters: { subCategories },
+      category:categoryDetails,
+      filters: { 
+        subCategories,
+        categoryDetails 
+
+      },
       pagination: {
         total,
         page: parseInt(page),
@@ -435,7 +448,9 @@ const createProduct = async (req, res, next) => {
       });
     }
 
-    const { category, subcategory, options = [] } = req.body;
+    const { category, subcategory, options = [] ,color} = req.body;
+
+    const colorCode = req.body.colorCode || getColorCode(color)
 
     // Validate category existence
     const categoryExists = await Category.findById(category);
@@ -492,6 +507,7 @@ const createProduct = async (req, res, next) => {
     // Create product with processed options
     const productData = {
       ...req.body,
+      colorCode,
       options: processedOptions,
       images: req.body.images?.filter(img => img && img.trim() !== '') || [],
       createdAt: new Date(),

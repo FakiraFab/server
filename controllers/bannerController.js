@@ -35,15 +35,24 @@ exports.getBanner = catchAsync(async (req, res) => {
 
 // Create banner
 exports.createBanner = catchAsync(async (req, res) => {
-  const banner = await Banner.create(req.body);
+  const bannerData = {
+    ...req.body,
+    imageMobile: req.body.imageMobile || null
+  };
+  const banner = await Banner.create(bannerData);
   responseHandler.success(res, { data: banner, message: 'Banner created successfully' }, 201);
 });
 
 // Update banner
 exports.updateBanner = catchAsync(async (req, res) => {
+  const updateData = { ...req.body };
+  if ('imageMobile' in updateData && !updateData.imageMobile) {
+    updateData.imageMobile = null;
+  }
+
   const banner = await Banner.findByIdAndUpdate(
     req.params.id,
-    req.body,
+    updateData,
     { new: true, runValidators: true }
   );
   
