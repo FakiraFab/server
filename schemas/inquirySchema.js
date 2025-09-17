@@ -105,9 +105,14 @@ const updateInquirySchema = Joi.object({
     'number.integer': 'Quantity must be an integer',
     'number.min': 'Quantity must be at least 1'
   }),
-  companyName: Joi.string().trim().max(100).optional().messages({
+   companyName: Joi.string().trim().max(100).when('buyOption', {
+    is: 'Wholesale',
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(''),
+  }).messages({
     'string.base': 'Company name must be a string',
-    'string.max': 'Company name cannot exceed 100 characters'
+    'string.max': 'Company name cannot exceed 100 characters',
+    'any.required': 'Company name is required for wholesale inquiries',
   }),
   productName: Joi.string().trim().max(200).optional().messages({
     'string.base': 'Product name must be a string',
