@@ -29,13 +29,18 @@ const createInquiry = async (req, res, next) => {
 
     // Validate product exists
     const productExists = await Product.findById(productId);
-    if (!productExists) {
-      return res.status(404).json({ success: false, message: "Product does not exist" });
-    }
 
-    // Validate variant if provided
-    if (variant && productExists.options && !productExists.options.some(v => v.color === variant)) {
-      return res.status(404).json({ success: false, message: "Variant does not exist" });
+     if (variant) {
+      // Check if variant matches default color or exists in options array
+      const isValidVariant = productExists.color === variant || 
+        (productExists.options && productExists.options.some(v => v.color === variant));
+      
+      if (!isValidVariant) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Selected color variant does not exist for this product" 
+        });
+      }
     }
 
     // Create inquiry
@@ -50,7 +55,7 @@ const createInquiry = async (req, res, next) => {
       product: productId,
       productName,
       productImage,
-      variant: variant || "",
+      variant: variant || productExists.color || "", // Set default color if variant not provided
       message,
     });
 
@@ -111,11 +116,11 @@ const updateInquiry = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    console.log('abcdddd',req.body);
     const updateData = { ...req.body };
-    delete updateData._id; // Prevent _id modification
-    console.log('abcdddd',updateData);
-
+    if (updateData.buyOption !== 'Wholesale' && updateData.companyName === '') {
+      delete updateData.companyName;
+    }
+    delete updateData._id;
 
     const { error } = updateInquirySchema.validate(updateData, {
       allowUnknown: true,
@@ -144,17 +149,41 @@ const updateInquiry = async (req, res, next) => {
         return res.status(404).json({ success: false, message: "Product not found" });
       }
 
-      if (product.quantity < inquiry.quantity) {
+      // Check if variant matches primary product color or exists in options
+      const isMainProduct = product.color === inquiry.variant;
+      const variantOption = product.options?.find(opt => opt.color === inquiry.variant);
+
+      if (isMainProduct) {
+        // Handle primary product quantity
+        if (product.quantity < inquiry.quantity) {
+          await session.abortTransaction();
+          await session.endSession();
+          return res.status(400).json({
+            success: false,
+            message: "Insufficient product quantity available"
+          });
+        }
+        product.quantity -= inquiry.quantity;
+      } else if (variantOption) {
+        // Handle variant quantity
+        if (variantOption.quantity < inquiry.quantity) {
+          await session.abortTransaction();
+          await session.endSession();
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient quantity available for ${inquiry.variant} variant`
+          });
+        }
+        variantOption.quantity -= inquiry.quantity;
+      } else {
         await session.abortTransaction();
         await session.endSession();
-        return res.status(400).json({
-          success: false,
-          message: "Insufficient product quantity available"
+        return res.status(404).json({ 
+          success: false, 
+          message: "Invalid product variant" 
         });
       }
 
-      // Deduct the quantity
-      product.quantity -= inquiry.quantity;
       await product.save({ session });
     }
 
