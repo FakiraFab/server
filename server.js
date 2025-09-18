@@ -35,21 +35,21 @@ app.use(express.json());
 
 
 
-console.log('Registering route: /api/products');
+// console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
-console.log('Registering route: /api/categories');
+// console.log('Registering route: /api/categories');
 app.use('/api/categories', categoryRoutes);
-console.log('Registering route: /api/inquiry');
+// console.log('Registering route: /api/inquiry');
 app.use('/api/inquiry', inquiryRoutes);
-console.log('Registering route: /api/admin');
+// console.log('Registering route: /api/admin');
 app.use('/api/admin', adminRoutes);
-console.log('Registering route: /api/subcategories');
+// console.log('Registering route: /api/subcategories');
 app.use('/api/subcategories', subcategoryRoutes);
-console.log('Registering route: /api/workshop');
+// console.log('Registering route: /api/workshop');
 app.use('/api/workshop', workshopRegistrationRoutes);
-console.log('Registering route: /api/banners');
+// console.log('Registering route: /api/banners');
 app.use('/api/banners', bannerRoutes);
-console.log('Registering route: /api/reels');
+// console.log('Registering route: /api/reels');
 app.use('/api/reels', reelRoutes);
 
 
