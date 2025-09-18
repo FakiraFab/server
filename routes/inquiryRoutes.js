@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const validateParams = require('../middleware/validateParams');
-const { createInquiry, getInquiries, updateInquiry, deleteInquiry, testWhatsApp } = require('../controllers/inquiryController');
+const { createInquiry, getInquiries, updateInquiry, deleteInquiry, testWhatsApp, searchInquiries } = require('../controllers/inquiryController');
 
 router.get('/', getInquiries);
+router.get('/search', searchInquiries);
 router.post('/', createInquiry);
 router.patch('/:id', validateParams(), updateInquiry);
 router.delete('/:id', validateParams(), deleteInquiry);

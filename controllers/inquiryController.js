@@ -241,10 +241,74 @@ const testWhatsApp = async (req, res, next) => {
   }
 };
 
+const searchInquiries = async (req, res, next) => {
+  try {
+    const { 
+      userName, userEmail, whatsappNumber, buyOption, location,
+      companyName, productName, variant, status,
+      createdFrom, createdTo, updatedFrom, updatedTo,
+      page = 1, limit = 10, sort = "-createdAt"
+    } = req.query;
+
+    const filter = {};
+    
+    // Build filter object based on provided query parameters
+    if (userName) filter.userName = { $regex: userName, $options: 'i' };
+    if (userEmail) filter.userEmail = userEmail;
+    if (whatsappNumber) filter.whatsappNumber = whatsappNumber;
+    if (buyOption) filter.buyOption = buyOption;
+    if (location) filter.location = { $regex: location, $options: 'i' };
+    if (companyName) filter.companyName = { $regex: companyName, $options: 'i' };
+    if (productName) filter.productName = { $regex: productName, $options: 'i' };
+    if (variant) filter.variant = variant;
+    if (status) filter.status = status;
+
+    // Date range filters
+    if (createdFrom || createdTo) {
+      filter.createdAt = {};
+      if (createdFrom) filter.createdAt.$gte = new Date(createdFrom);
+      if (createdTo) filter.createdAt.$lte = new Date(createdTo);
+    }
+
+    if (updatedFrom || updatedTo) {
+      filter.updatedAt = {};
+      if (updatedFrom) filter.updatedAt.$gte = new Date(updatedFrom);
+      if (updatedTo) filter.updatedAt.$lte = new Date(updatedTo);
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get filtered inquiries with pagination and sorting
+    const inquiries = await Inquiry.find(filter)
+      .populate("product", "name imageUrl")
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort(sort)
+      .select("userName userEmail whatsappNumber buyOption location quantity companyName product productName productImage variant message status createdAt updatedAt")
+      .lean();
+
+    // Get total count for pagination
+    const total = await Inquiry.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      data: inquiries,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = { 
   createInquiry, 
   getInquiries, 
   updateInquiry, 
   deleteInquiry,
-  testWhatsApp
+  testWhatsApp,
+  searchInquiries
 };
