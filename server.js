@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const connectDb = require("./config/db");
+const logger = require('./utils/logger');
 const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
@@ -33,6 +34,19 @@ app.use(cors());
 // Middleware to parse JSON requests
 app.use(express.json());
 
+// Lightweight request logging to stdout (captured by Render)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.info('HTTP request', {
+      method: req.method,
+      url: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - start
+    });
+  });
+  next();
+});
 
 
 // console.log('Registering route: /api/products');
@@ -68,21 +82,26 @@ app.use(errorHandler);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', err => {
-  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
-  console.error(err.name, err.message, err.stack);
+  logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack
+  });
   process.exit(1);
 });
 
 // Start the server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  logger.info('Server started', { env: process.env.NODE_ENV, port: PORT });
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', err => {
-  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
-  console.error(err.name, err.message);
+  logger.error('UNHANDLED REJECTION! 💥 Shutting down...', {
+    name: err.name,
+    message: err.message
+  });
   server.close(() => {
     process.exit(1);
   });

@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 const auth = async (req, res, next) => {
   try {
-    console.log('Auth middleware - URL:', req.originalUrl, 'Path:', req.path);
+    // console.log('Auth middleware - URL:', req.originalUrl, 'Path:', req.path);
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
       throw new Error('Authentication required');

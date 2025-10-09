@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 class AppError extends Error {
     constructor(message, statusCode) {
         super(message);
@@ -31,6 +33,14 @@ const handleJWTError = () => new AppError('Invalid token. Please log in again!',
 const handleJWTExpiredError = () => new AppError('Your token has expired! Please log in again.', 401);
 
 const sendErrorDev = (err, req, res) => {
+    logger.error('Request error (dev)', {
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: err.statusCode,
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+    });
     return res.status(err.statusCode).json({
         success: false,
         error: err,
@@ -42,13 +52,27 @@ const sendErrorDev = (err, req, res) => {
 const sendErrorProd = (err, req, res) => {
     // Operational, trusted error: send message to client
     if (err.isOperational) {
+        logger.warn('Operational error', {
+            method: req.method,
+            url: req.originalUrl,
+            statusCode: err.statusCode,
+            name: err.name,
+            message: err.message
+        });
         return res.status(err.statusCode).json({
             success: false,
             message: err.message
         });
     }
     // Programming or other unknown error: don't leak error details
-    console.error('ERROR 💥', err);
+    logger.error('Unknown server error', {
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: 500,
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+    });
     return res.status(500).json({
         success: false,
         message: 'Something went very wrong!'
