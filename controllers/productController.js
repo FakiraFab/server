@@ -3,6 +3,7 @@ const Category = require('../models/category');
 const Subcategory = require('../models/subcategory');
 const { productSchema } = require('../schemas/productSchemas');
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 
 // Enhanced color mapping with more colors
@@ -438,6 +439,11 @@ const createProduct = async (req, res, next) => {
     // Validate request body
     const { error } = productSchema.validate(req.body);
     if (error) {
+      logger.warn('Product create validation error', {
+        url: req.originalUrl,
+        body: req.body,
+        details: error.details?.map(d => ({ path: d.path, message: d.message }))
+      });
       return res.status(400).json({ 
         success: false, 
         message: 'Validation error',
@@ -455,15 +461,22 @@ const createProduct = async (req, res, next) => {
     // Validate category existence
     const categoryExists = await Category.findById(category);
     if (!categoryExists) {
+      logger.warn('Product create: category not found', { category });
       return res.status(400).json({ success: false, message: 'Category does not exist' });
     }
 
     // Validate subcategory existence and relationship
     const subcategoryExists = await Subcategory.findById(subcategory);
     if (!subcategoryExists) {
+      logger.warn('Product create: subcategory not found', { subcategory });
       return res.status(400).json({ success: false, message: 'Subcategory does not exist' });
     }
     if (String(subcategoryExists.parentCategory) !== String(category)) {
+      logger.warn('Product create: subcategory does not belong to category', {
+        subcategory,
+        category,
+        parentCategory: subcategoryExists.parentCategory
+      });
       return res.status(400).json({ success: false, message: 'Subcategory does not belong to the specified category' });
     }
 
@@ -490,6 +503,7 @@ const createProduct = async (req, res, next) => {
     });
 
     if (validationErrors.length > 0) {
+      logger.warn('Product create business validation failed', { errors: validationErrors });
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -529,6 +543,11 @@ const createProduct = async (req, res, next) => {
     });
   } catch (error) {
     if (error.name === 'ValidationError') {
+      logger.warn('Product create mongoose validation error', {
+        name: error.name,
+        message: error.message,
+        errors: Object.values(error.errors || {}).map(e => e.message)
+      });
       const validationErrors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
         success: false,
@@ -536,6 +555,11 @@ const createProduct = async (req, res, next) => {
         errors: validationErrors
       });
     }
+    logger.error('Product create unexpected error', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     next(error);
   }
 };
@@ -557,6 +581,12 @@ const updateProduct = async (req, res, next) => {
     // Validate request body
     const { error } = productSchema.validate(req.body);
     if (error) {
+      logger.warn('Product update validation error', {
+        url: req.originalUrl,
+        params: req.params,
+        body: req.body,
+        details: error.details?.map(d => ({ path: d.path, message: d.message }))
+      });
       return res.status(400).json({ 
         success: false, 
         message: 'Validation error',
@@ -573,6 +603,7 @@ const updateProduct = async (req, res, next) => {
     if (category) {
       const categoryExists = await Category.findById(category);
       if (!categoryExists) {
+        logger.warn('Product update: category not found', { id, category });
         return res.status(404).json({ success: false, message: 'Category does not exist' });
       }
     }
@@ -581,9 +612,16 @@ const updateProduct = async (req, res, next) => {
     if (subcategory) {
       const subcategoryExists = await Subcategory.findById(subcategory);
       if (!subcategoryExists) {
+        logger.warn('Product update: subcategory not found', { id, subcategory });
         return res.status(404).json({ success: false, message: 'Subcategory does not exist' });
       }
       if (category && String(subcategoryExists.parentCategory) !== String(category)) {
+        logger.warn('Product update: subcategory does not belong to category', {
+          id,
+          subcategory,
+          category,
+          parentCategory: subcategoryExists.parentCategory
+        });
         return res.status(400).json({ success: false, message: 'Subcategory does not belong to the specified category' });
       }
     }
@@ -616,6 +654,12 @@ const updateProduct = async (req, res, next) => {
     });
   } catch (error) {
     if (error.name === 'ValidationError') {
+      logger.warn('Product update mongoose validation error', {
+        id: req.params?.id,
+        name: error.name,
+        message: error.message,
+        errors: Object.values(error.errors || {}).map(e => e.message)
+      });
       const validationErrors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
         success: false,
@@ -623,6 +667,12 @@ const updateProduct = async (req, res, next) => {
         errors: validationErrors
       });
     }
+    logger.error('Product update unexpected error', {
+      id: req.params?.id,
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     next(error);
   }
 };
