@@ -10,6 +10,7 @@ const subcategoryRoutes = require("./routes/subcategoryRoutes");
 const workshopRegistrationRoutes = require("./routes/workshopRegistrationRoutes");
 const bannerRoutes = require("./routes/bannerRoutes");
 const reelRoutes = require("./routes/reelRoutes");
+const blogRoutes = require("./routes/blogRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -65,6 +66,8 @@ app.use('/api/workshop', workshopRegistrationRoutes);
 app.use('/api/banners', bannerRoutes);
 // console.log('Registering route: /api/reels');
 app.use('/api/reels', reelRoutes);
+// console.log('Registering route: /api/blogs');
+app.use('/api/blogs', blogRoutes);
 
 
 // Welcome route
