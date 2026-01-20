@@ -27,7 +27,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       to,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, '') // Strip HTML tags for text version
+      text: text || '' // Use provided text or empty string (HTML will be used for display)
     };
 
     const info = await transporter.sendMail(mailOptions);
