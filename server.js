@@ -11,6 +11,7 @@ const workshopRegistrationRoutes = require("./routes/workshopRegistrationRoutes"
 const bannerRoutes = require("./routes/bannerRoutes");
 const reelRoutes = require("./routes/reelRoutes");
 const blogRoutes = require("./routes/blogRoutes");
+const authRoutes = require("./routes/authRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -50,6 +51,8 @@ app.use((req, res, next) => {
 });
 
 
+// console.log('Registering route: /api/auth');
+app.use('/api/auth', authRoutes);
 // console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
 // console.log('Registering route: /api/categories');
