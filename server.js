@@ -12,6 +12,9 @@ const bannerRoutes = require("./routes/bannerRoutes");
 const reelRoutes = require("./routes/reelRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const authRoutes = require("./routes/authRoutes");
+const addressRoutes = require("./routes/addressRoutes");
+const cartRoutes = require("./routes/cartRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -53,6 +56,12 @@ app.use((req, res, next) => {
 
 // console.log('Registering route: /api/auth');
 app.use('/api/auth', authRoutes);
+// console.log('Registering route: /api/addresses');
+app.use('/api/addresses', addressRoutes);
+// console.log('Registering route: /api/cart');
+app.use('/api/cart', cartRoutes);
+// console.log('Registering route: /api/wishlist');
+app.use('/api/wishlist', wishlistRoutes);
 // console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
 // console.log('Registering route: /api/categories');
