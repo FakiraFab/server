@@ -15,6 +15,7 @@ const authRoutes = require("./routes/authRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 
@@ -62,6 +63,8 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/cart', cartRoutes);
 // console.log('Registering route: /api/wishlist');
 app.use('/api/wishlist', wishlistRoutes);
+// console.log('Registering route: /api/orders');
+app.use('/api/orders', orderRoutes);
 // console.log('Registering route: /api/products');
 app.use('/api/products', productRoutes);
 // console.log('Registering route: /api/categories');
