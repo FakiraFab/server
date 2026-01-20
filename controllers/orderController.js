@@ -110,8 +110,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
       addressType: billingAddress.addressType
     },
     paymentMethod,
-    shippingCharges: 50, // Fixed shipping charges (can be calculated based on location)
-    discount: 0, // Apply coupon discount here if needed
+    shippingCharges: 50, // TODO: Implement shipping calculation based on location
+    discount: 0, // TODO: Apply coupon discount if couponCode provided
     statusHistory: [{
       status: 'pending',
       timestamp: Date.now(),

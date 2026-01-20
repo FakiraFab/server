@@ -419,8 +419,8 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
     return next(new AppError('User with this phone number not found. Please register first.', StatusCodes.NOT_FOUND));
   }
 
-  // Generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 6-digit OTP using crypto for security
+  const otp = crypto.randomInt(100000, 999999).toString();
 
   // Hash OTP and save to user
   user.otpHash = crypto.createHash('sha256').update(otp).digest('hex');
