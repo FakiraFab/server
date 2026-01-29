@@ -286,8 +286,11 @@ When admin tries to manually set `shipped` or `delivered`:
 ## Security Considerations
 
 1. **Credentials:** Store Shiprocket credentials in environment variables
-2. **Webhook Validation:** Consider adding signature validation for webhooks
-3. **Rate Limiting:** Implement rate limiting on webhook endpoint
+2. **Webhook Validation:** Consider adding signature validation for webhooks in production
+3. **Rate Limiting:** Webhook endpoints currently don't have rate limiting. For production, consider:
+   - IP whitelisting for Shiprocket IPs
+   - Request signature verification
+   - General rate limiting at infrastructure level
 4. **Logging:** Ensure sensitive data not logged (passwords, tokens)
 
 ## Dependencies
