@@ -68,7 +68,7 @@ class ShiprocketService {
       const payload = {
         order_id: order.orderNumber,
         order_date: order.createdAt.toISOString().split('T')[0],
-        pickup_location: 'Primary', // Default pickup location
+        pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || 'Primary', // Configurable pickup location
         channel_id: '',
         comment: `Order ${order.orderNumber}`,
         billing_customer_name: order.billingAddress.fullName,
@@ -131,11 +131,12 @@ class ShiprocketService {
       try {
         awbData = await this.assignAWB(shipmentId, token);
       } catch (awbError) {
-        logger.error('Failed to assign AWB, will retry later', {
+        logger.warn('Failed to assign AWB, shipment created without AWB', {
           orderNumber: order.orderNumber,
           shipmentId,
           error: awbError.message
         });
+        // Note: AWB assignment can be retried later or done manually in Shiprocket dashboard
       }
 
       // Update order with shipment details

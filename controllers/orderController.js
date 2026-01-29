@@ -546,7 +546,7 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   // These should only be updated via Shiprocket webhook
   if (status === 'shipped' || status === 'delivered') {
     return next(new AppError(
-      'Cannot manually set order to shipped or delivered. These statuses are controlled by Shiprocket webhook.',
+      'Cannot manually set order to shipped or delivered. These statuses are automatically updated via Shiprocket webhooks when the shipment progresses.',
       StatusCodes.BAD_REQUEST
     ));
   }
@@ -554,10 +554,6 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   // Update order status
   order.orderStatus = status;
   order.addStatusHistory(status, note || `Order status updated to ${status}`);
-
-  // Update tracking info if provided
-  if (trackingNumber) order.trackingNumber = trackingNumber;
-  if (shippingProvider) order.shippingProvider = shippingProvider;
 
   await order.save();
 

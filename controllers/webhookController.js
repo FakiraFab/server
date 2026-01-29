@@ -32,7 +32,7 @@ handleShiprocketWebhook = catchAsync(async (req, res, next) => {
     }
 
     if (!order) {
-      logger.error("Order not found for Shiprocket webhook", {
+      logger.warn("Order not found for Shiprocket webhook", {
         awb: payload.awb,
         orderId: payload.order_id
       });
@@ -51,7 +51,7 @@ handleShiprocketWebhook = catchAsync(async (req, res, next) => {
       'CANCELLED': { shipping: 'cancelled', order: 'cancelled' }
     };
 
-    const currentStatus = payload.current_status?.toUpperCase();
+    const currentStatus = payload.current_status?.toUpperCase().trim();
     const mappedStatus = statusMapping[currentStatus];
 
     if (!mappedStatus) {
@@ -60,6 +60,19 @@ handleShiprocketWebhook = catchAsync(async (req, res, next) => {
         orderId: order.orderNumber
       });
       return res.status(200).json({ status: "ok", message: "Status not mapped" });
+    }
+
+    // Check if order status transition is valid
+    // Don't update to delivered/returned if already cancelled by user
+    const currentOrderStatus = order.orderStatus;
+    if ((currentOrderStatus === 'cancelled' || currentOrderStatus === 'returned') && 
+        (mappedStatus.order === 'delivered')) {
+      logger.warn("Invalid status transition - order already cancelled/returned", {
+        orderNumber: order.orderNumber,
+        currentStatus: currentOrderStatus,
+        attemptedStatus: mappedStatus.order
+      });
+      return res.status(200).json({ status: "ok", message: "Invalid status transition" });
     }
 
     // Update order shipping status
@@ -71,6 +84,16 @@ handleShiprocketWebhook = catchAsync(async (req, res, next) => {
     // Update AWB code if provided and not already set
     if (payload.awb && !order.shipping.awbCode) {
       order.shipping.awbCode = payload.awb;
+      
+      // Check if trackingNumber already exists and log warning if different
+      if (order.trackingNumber && order.trackingNumber !== payload.awb) {
+        logger.warn("Tracking number mismatch", {
+          orderNumber: order.orderNumber,
+          existingTrackingNumber: order.trackingNumber,
+          newAwbCode: payload.awb
+        });
+      }
+      
       order.trackingNumber = payload.awb;
     }
 
