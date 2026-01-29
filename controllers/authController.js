@@ -1,11 +1,11 @@
-const User = require('../models/user');
-const catchAsync = require('../utils/catchAsync');
-const { AppError } = require('../middleware/errorHandler');
-const { StatusCodes } = require('../utils/errorMessages');
-const ResponseHandler = require('../utils/responseHandler');
-const logger = require('../utils/logger');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const User = require("../models/user");
+const catchAsync = require("../utils/catchAsync");
+const { AppError } = require("../middleware/errorHandler");
+const { StatusCodes } = require("../utils/errorMessages");
+const ResponseHandler = require("../utils/responseHandler");
+const logger = require("../utils/logger");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const {
   signupSchema,
   loginSchema,
@@ -14,24 +14,20 @@ const {
   refreshTokenSchema,
   verifyEmailSchema,
   sendOtpSchema,
-  verifyOtpSchema
-} = require('../schemas/authSchemas');
+  verifyOtpSchema,
+} = require("../schemas/authSchemas");
 
 // Helper function to generate JWT tokens
 const generateAccessToken = (userId) => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
-  );
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "15m",
+  });
 };
 
 const generateRefreshToken = (userId) => {
-  return jwt.sign(
-    { id: userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
-  );
+  return jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+  });
 };
 
 /**
@@ -42,15 +38,25 @@ exports.signup = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = signupSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
-  const { email, password, name, phone } = req.body;
+  const { email, password, confirmPassword, name, phone } = req.body;
+
+  if (password !== confirmPassword) {
+    return next(
+      new AppError("Passwords do not match", StatusCodes.BAD_REQUEST),
+    );
+  }
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return next(new AppError('User with this email already exists', StatusCodes.CONFLICT));
+    return next(
+      new AppError("User with this email already exists", StatusCodes.CONFLICT),
+    );
   }
 
   // Create new user
@@ -58,7 +64,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     email,
     password,
     name,
-    phone
+    phone,
   });
 
   // Generate email verification token
@@ -76,26 +82,30 @@ exports.signup = catchAsync(async (req, res, next) => {
   user.addRefreshToken(refreshToken);
   await user.save({ validateBeforeSave: false });
 
-  logger.info('User registered successfully', {
+  logger.info("User registered successfully", {
     userId: user._id,
-    email: user.email
+    email: user.email,
   });
 
   // Return response
-  ResponseHandler.created(res, {
-    user: {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      role: user.role,
-      isVerified: user.isVerified
+  ResponseHandler.created(
+    res,
+    {
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        isVerified: user.isVerified,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
     },
-    tokens: {
-      accessToken,
-      refreshToken
-    }
-  }, 'User registered successfully. Please verify your email.');
+    "User registered successfully. Please verify your email.",
+  );
 });
 
 /**
@@ -106,27 +116,38 @@ exports.login = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = loginSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { email, password } = req.body;
 
   // Find user and include password field
-  const user = await User.findOne({ email }).select('+password');
-  
+  const user = await User.findOne({ email }).select("+password");
+
   if (!user) {
-    return next(new AppError('Invalid email or password', StatusCodes.UNAUTHORIZED));
+    return next(
+      new AppError("Invalid email or password", StatusCodes.UNAUTHORIZED),
+    );
   }
 
   // Check if password is correct
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
-    return next(new AppError('Invalid email or password', StatusCodes.UNAUTHORIZED));
+    return next(
+      new AppError("Invalid email or password", StatusCodes.UNAUTHORIZED),
+    );
   }
 
   // Check if user is active
   if (!user.isActive) {
-    return next(new AppError('Your account has been deactivated. Please contact support.', StatusCodes.UNAUTHORIZED));
+    return next(
+      new AppError(
+        "Your account has been deactivated. Please contact support.",
+        StatusCodes.UNAUTHORIZED,
+      ),
+    );
   }
 
   // Generate JWT tokens
@@ -137,9 +158,9 @@ exports.login = catchAsync(async (req, res, next) => {
   user.addRefreshToken(refreshToken);
   await user.save({ validateBeforeSave: false });
 
-  logger.info('User logged in successfully', {
+  logger.info("User logged in successfully", {
     userId: user._id,
-    email: user.email
+    email: user.email,
   });
 
   // Return response
@@ -151,14 +172,14 @@ exports.login = catchAsync(async (req, res, next) => {
         name: user.name,
         phone: user.phone,
         role: user.role,
-        isVerified: user.isVerified
+        isVerified: user.isVerified,
       },
       tokens: {
         accessToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     },
-    message: 'Login successful'
+    message: "Login successful",
   });
 });
 
@@ -170,7 +191,9 @@ exports.refresh = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = refreshTokenSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { refreshToken } = req.body;
@@ -180,32 +203,41 @@ exports.refresh = catchAsync(async (req, res, next) => {
   try {
     decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
   } catch (err) {
-    return next(new AppError('Invalid or expired refresh token', StatusCodes.UNAUTHORIZED));
+    return next(
+      new AppError(
+        "Invalid or expired refresh token",
+        StatusCodes.UNAUTHORIZED,
+      ),
+    );
   }
 
   // Find user
   const user = await User.findById(decoded.id);
   if (!user) {
-    return next(new AppError('User not found', StatusCodes.UNAUTHORIZED));
+    return next(new AppError("User not found", StatusCodes.UNAUTHORIZED));
   }
 
   // Check if refresh token exists in database
-  const tokenExists = user.refreshTokens.some(rt => rt.token === refreshToken);
+  const tokenExists = user.refreshTokens.some(
+    (rt) => rt.token === refreshToken,
+  );
   if (!tokenExists) {
-    return next(new AppError('Invalid refresh token', StatusCodes.UNAUTHORIZED));
+    return next(
+      new AppError("Invalid refresh token", StatusCodes.UNAUTHORIZED),
+    );
   }
 
   // Generate new access token
   const accessToken = generateAccessToken(user._id);
 
-  logger.info('Access token refreshed', { userId: user._id });
+  logger.info("Access token refreshed", { userId: user._id });
 
   // Return response
   ResponseHandler.success(res, {
     data: {
-      accessToken
+      accessToken,
     },
-    message: 'Token refreshed successfully'
+    message: "Token refreshed successfully",
   });
 });
 
@@ -217,7 +249,9 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = forgotPasswordSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { email } = req.body;
@@ -227,7 +261,8 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   if (!user) {
     // Don't reveal if user exists or not
     return ResponseHandler.success(res, {
-      message: 'If an account exists with this email, a password reset link has been sent.'
+      message:
+        "If an account exists with this email, a password reset link has been sent.",
     });
   }
 
@@ -238,14 +273,15 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // TODO: Send password reset email
   // await emailService.sendPasswordResetEmail(user, resetToken);
 
-  logger.info('Password reset token generated', {
+  logger.info("Password reset token generated", {
     userId: user._id,
-    email: user.email
+    email: user.email,
   });
 
   // Return response
   ResponseHandler.success(res, {
-    message: 'If an account exists with this email, a password reset link has been sent.'
+    message:
+      "If an account exists with this email, a password reset link has been sent.",
   });
 });
 
@@ -257,45 +293,46 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = resetPasswordSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { token, password } = req.body;
 
   // Hash the token from request
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   // Find user with valid token and not expired
   const user = await User.findOne({
     passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() }
+    passwordResetExpires: { $gt: Date.now() },
   });
 
   if (!user) {
-    return next(new AppError('Invalid or expired reset token', StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError("Invalid or expired reset token", StatusCodes.BAD_REQUEST),
+    );
   }
 
   // Update password
   user.password = password;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
-  
+
   // Invalidate all refresh tokens for security
   user.refreshTokens = [];
-  
+
   await user.save();
 
-  logger.info('Password reset successful', {
+  logger.info("Password reset successful", {
     userId: user._id,
-    email: user.email
+    email: user.email,
   });
 
   // Return response
   ResponseHandler.success(res, {
-    message: 'Password reset successful. Please log in with your new password.'
+    message: "Password reset successful. Please log in with your new password.",
   });
 });
 
@@ -307,25 +344,29 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = verifyEmailSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { token } = req.body;
 
   // Hash the token from request
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   // Find user with valid token and not expired
   const user = await User.findOne({
     emailVerificationToken: hashedToken,
-    emailVerificationExpires: { $gt: Date.now() }
+    emailVerificationExpires: { $gt: Date.now() },
   });
 
   if (!user) {
-    return next(new AppError('Invalid or expired verification token', StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(
+        "Invalid or expired verification token",
+        StatusCodes.BAD_REQUEST,
+      ),
+    );
   }
 
   // Set user as verified
@@ -334,14 +375,14 @@ exports.verifyEmail = catchAsync(async (req, res, next) => {
   user.emailVerificationExpires = undefined;
   await user.save({ validateBeforeSave: false });
 
-  logger.info('Email verified successfully', {
+  logger.info("Email verified successfully", {
     userId: user._id,
-    email: user.email
+    email: user.email,
   });
 
   // Return response
   ResponseHandler.success(res, {
-    message: 'Email verified successfully'
+    message: "Email verified successfully",
   });
 });
 
@@ -353,7 +394,9 @@ exports.logout = catchAsync(async (req, res, next) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
-    return next(new AppError('Refresh token is required', StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError("Refresh token is required", StatusCodes.BAD_REQUEST),
+    );
   }
 
   // Find user and remove refresh token
@@ -363,11 +406,11 @@ exports.logout = catchAsync(async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
   }
 
-  logger.info('User logged out', { userId: req.user.id });
+  logger.info("User logged out", { userId: req.user.id });
 
   // Return response
   ResponseHandler.success(res, {
-    message: 'Logged out successfully'
+    message: "Logged out successfully",
   });
 });
 
@@ -378,9 +421,9 @@ exports.logout = catchAsync(async (req, res, next) => {
 exports.getMe = catchAsync(async (req, res, next) => {
   // Find user by ID
   const user = await User.findById(req.user.id);
-  
+
   if (!user) {
-    return next(new AppError('User not found', StatusCodes.NOT_FOUND));
+    return next(new AppError("User not found", StatusCodes.NOT_FOUND));
   }
 
   // Return response
@@ -393,9 +436,9 @@ exports.getMe = catchAsync(async (req, res, next) => {
       role: user.role,
       isVerified: user.isVerified,
       isActive: user.isActive,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
     },
-    message: 'User profile retrieved successfully'
+    message: "User profile retrieved successfully",
   });
 });
 
@@ -407,34 +450,41 @@ exports.sendOtp = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = sendOtpSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { phone } = req.body;
 
   // Find or create user by phone
   let user = await User.findOne({ phone });
-  
+
   if (!user) {
-    return next(new AppError('User with this phone number not found. Please register first.', StatusCodes.NOT_FOUND));
+    return next(
+      new AppError(
+        "User with this phone number not found. Please register first.",
+        StatusCodes.NOT_FOUND,
+      ),
+    );
   }
 
   // Generate 6-digit OTP using crypto for security
   const otp = crypto.randomInt(100000, 999999).toString();
 
   // Hash OTP and save to user
-  user.otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+  user.otpHash = crypto.createHash("sha256").update(otp).digest("hex");
   user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
   await user.save({ validateBeforeSave: false });
 
   // TODO: Send OTP via SMS
   // await smsService.sendOTP(phone, otp);
 
-  logger.info('OTP sent to phone', { phone, userId: user._id });
+  logger.info("OTP sent to phone", { phone, userId: user._id });
 
   // Return response
   ResponseHandler.success(res, {
-    message: 'OTP sent successfully to your phone'
+    message: "OTP sent successfully to your phone",
   });
 });
 
@@ -446,32 +496,36 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   // Validate request body
   const { error } = verifyOtpSchema.validate(req.body);
   if (error) {
-    return next(new AppError(error.details[0].message, StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError(error.details[0].message, StatusCodes.BAD_REQUEST),
+    );
   }
 
   const { phone, otp } = req.body;
 
   // Hash the provided OTP
-  const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
   // Find user with matching phone, OTP hash, and not expired
   const user = await User.findOne({
     phone,
     otpHash: hashedOtp,
-    otpExpires: { $gt: Date.now() }
+    otpExpires: { $gt: Date.now() },
   });
 
   if (!user) {
-    return next(new AppError('Invalid or expired OTP', StatusCodes.BAD_REQUEST));
+    return next(
+      new AppError("Invalid or expired OTP", StatusCodes.BAD_REQUEST),
+    );
   }
 
   // Clear OTP fields
   user.otpHash = undefined;
   user.otpExpires = undefined;
-  
+
   // Mark phone as verified
   user.isVerified = true;
-  
+
   await user.save({ validateBeforeSave: false });
 
   // Generate JWT tokens
@@ -482,9 +536,9 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
   user.addRefreshToken(refreshToken);
   await user.save({ validateBeforeSave: false });
 
-  logger.info('OTP verified and user logged in', {
+  logger.info("OTP verified and user logged in", {
     userId: user._id,
-    phone: user.phone
+    phone: user.phone,
   });
 
   // Return response
@@ -496,13 +550,13 @@ exports.verifyOtp = catchAsync(async (req, res, next) => {
         name: user.name,
         phone: user.phone,
         role: user.role,
-        isVerified: user.isVerified
+        isVerified: user.isVerified,
       },
       tokens: {
         accessToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     },
-    message: 'OTP verified successfully'
+    message: "OTP verified successfully",
   });
 });
