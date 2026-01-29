@@ -53,6 +53,33 @@ const statusHistorySchema = new mongoose.Schema({
   note: String
 }, { _id: false });
 
+const shippingSchema = new mongoose.Schema({
+  provider: {
+    type: String,
+    default: 'shiprocket'
+  },
+  shiprocketOrderId: {
+    type: String,
+    index: true
+  },
+  shipmentId: {
+    type: String,
+    index: true
+  },
+  awbCode: String,
+  courierName: String,
+  courierCompanyId: Number,
+  pickupScheduled: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['not_created', 'created', 'awb_assigned', 'picked', 'in_transit', 'delivered', 'rto', 'cancelled'],
+    default: 'not_created'
+  }
+}, { _id: false });
+
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
@@ -122,6 +149,7 @@ const orderSchema = new mongoose.Schema({
   },
   trackingNumber: String,
   shippingProvider: String,
+  shipping: shippingSchema,
   estimatedDelivery: Date,
   deliveredAt: Date,
   cancelledAt: Date,

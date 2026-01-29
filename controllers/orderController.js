@@ -10,6 +10,7 @@ const ResponseHandler = require('../utils/responseHandler');
 const logger = require('../utils/logger');
 const razorpay = require('../config/razorpay');
 const crypto = require('crypto');
+const shiprocketService = require('../services/shiprocket.service');
 const {
   createOrderSchema,
   verifyPaymentSchema,
@@ -194,6 +195,20 @@ exports.createOrder = catchAsync(async (req, res, next) => {
       orderNumber: order.orderNumber
     });
 
+    // Create Shiprocket shipment for COD (don't let failure break the flow)
+    try {
+      await shiprocketService.createShipment(order);
+      logger.info('Shiprocket shipment created for COD order', {
+        orderNumber: order.orderNumber
+      });
+    } catch (shiprocketError) {
+      logger.error('Failed to create Shiprocket shipment for COD (non-blocking)', {
+        orderNumber: order.orderNumber,
+        error: shiprocketError.message
+      });
+      // Continue without throwing error
+    }
+
     return ResponseHandler.created(res, {
       order: {
         id: order._id,
@@ -289,6 +304,20 @@ exports.verifyPayment = catchAsync(async (req, res, next) => {
       orderNumber: order.orderNumber,
       paymentId: payment._id
     });
+
+    // Create Shiprocket shipment (don't let failure break the flow)
+    try {
+      await shiprocketService.createShipment(order);
+      logger.info('Shiprocket shipment created for order', {
+        orderNumber: order.orderNumber
+      });
+    } catch (shiprocketError) {
+      logger.error('Failed to create Shiprocket shipment (non-blocking)', {
+        orderNumber: order.orderNumber,
+        error: shiprocketError.message
+      });
+      // Continue without throwing error
+    }
 
     // TODO: Send confirmation email/SMS
     // await emailService.sendOrderConfirmationEmail(order, req.user);
@@ -401,6 +430,22 @@ exports.cancelOrder = catchAsync(async (req, res, next) => {
   order.cancelOrder(reason);
   await order.save();
 
+  // Cancel Shiprocket shipment if exists (don't let failure break the flow)
+  if (order.shipping && order.shipping.shipmentId) {
+    try {
+      await shiprocketService.cancelShipment(order);
+      logger.info('Shiprocket shipment cancelled for order', {
+        orderNumber: order.orderNumber
+      });
+    } catch (shiprocketError) {
+      logger.error('Failed to cancel Shiprocket shipment (non-blocking)', {
+        orderNumber: order.orderNumber,
+        error: shiprocketError.message
+      });
+      // Continue without throwing error
+    }
+  }
+
   // If payment was made, initiate refund
   if (order.paymentStatus === 'paid' && order.paymentId) {
     // TODO: Initiate refund with Razorpay
@@ -497,6 +542,15 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
     return next(new AppError('Order not found', StatusCodes.NOT_FOUND));
   }
 
+  // Restrict manual status updates for shipped and delivered
+  // These should only be updated via Shiprocket webhook
+  if (status === 'shipped' || status === 'delivered') {
+    return next(new AppError(
+      'Cannot manually set order to shipped or delivered. These statuses are controlled by Shiprocket webhook.',
+      StatusCodes.BAD_REQUEST
+    ));
+  }
+
   // Update order status
   order.orderStatus = status;
   order.addStatusHistory(status, note || `Order status updated to ${status}`);
@@ -504,16 +558,6 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
   // Update tracking info if provided
   if (trackingNumber) order.trackingNumber = trackingNumber;
   if (shippingProvider) order.shippingProvider = shippingProvider;
-
-  // Set estimated delivery if shipped
-  if (status === 'shipped' && !order.estimatedDelivery) {
-    order.estimatedDelivery = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-  }
-
-  // Set delivered date if delivered
-  if (status === 'delivered') {
-    order.deliveredAt = Date.now();
-  }
 
   await order.save();
 
