@@ -6,6 +6,7 @@ const { warmCriticalCaches } = require('../utils/cacheWarming');
 const { auth } = require('../middleware/auth');
 const catchAsync = require('../utils/catchAsync');
 const responseHandler = require('../utils/responseHandler');
+const logger = require('../utils/logger');
 
 /**
  * Health check endpoint for Redis
@@ -88,7 +89,7 @@ router.post('/invalidate/:resourceType', auth, catchAsync(async (req, res) => {
 router.post('/warm', auth, catchAsync(async (req, res) => {
   // Run cache warming asynchronously
   warmCriticalCaches().catch(err => {
-    console.error('Cache warming error:', err);
+    logger.error('Cache warming error', { error: err.message, stack: err.stack });
   });
 
   responseHandler.success(res, {

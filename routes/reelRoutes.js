@@ -11,9 +11,9 @@ router.get("/", cache({ prefix: 'reels', ttl: 3600, includeParams: ['page', 'lim
 router.get("/active", cache({ prefix: 'reels', suffix: 'active', ttl: 3600 }), reelController.getActiveReels);
 router.get("/:id", reelController.getReel);
 
-router.post("/", validate(createReelSchema), reelController.createReel, invalidateCacheMiddleware('reels'));
-router.patch("/:id", validate(updateReelSchema), reelController.updateReel, invalidateCacheMiddleware('reels'));
-router.patch("/:id/toggle-visibility", reelController.toggleReelVisibility, invalidateCacheMiddleware('reels'));
-router.delete("/:id", reelController.deleteReel, invalidateCacheMiddleware('reels'));
+router.post("/", validate(createReelSchema), invalidateCacheMiddleware('reels'), reelController.createReel);
+router.patch("/:id", validate(updateReelSchema), invalidateCacheMiddleware('reels'), reelController.updateReel);
+router.patch("/:id/toggle-visibility", invalidateCacheMiddleware('reels'), reelController.toggleReelVisibility);
+router.delete("/:id", invalidateCacheMiddleware('reels'), reelController.deleteReel);
 
 module.exports = router;

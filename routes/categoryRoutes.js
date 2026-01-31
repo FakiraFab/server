@@ -17,8 +17,8 @@ router.get("/", cache({ prefix: 'categories', ttl: 21600, includeParams: ['page'
 router.get("/:id", validateParams(), getCategoryById);
 
 // Protected admin routes
-router.post("/", auth, createCategory, invalidateCacheMiddleware('categories'));
-router.patch("/:id", auth, validateParams(), updateCategory, invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })));
-router.delete("/:id", auth, validateParams(), deleteCategory, invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })));
+router.post("/", auth, invalidateCacheMiddleware('categories'), createCategory);
+router.patch("/:id", auth, validateParams(), invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })), updateCategory);
+router.delete("/:id", auth, validateParams(), invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })), deleteCategory);
 
 module.exports = router;

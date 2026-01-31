@@ -21,14 +21,14 @@ router.get("/", cache({ prefix: 'products', ttl: 1800, includeParams: ['category
 router.get("/:id", validateParams(), getProductById);
 
 // Protected admin routes
-router.post("/", auth, createProduct, invalidateCacheMiddleware('products', (req, res, data) => {
+router.post("/", auth, invalidateCacheMiddleware('products', (req, res, data) => {
   // Extract category ID from the created product
   return { categoryId: data?.data?.category };
-}));
-router.patch("/:id", auth, validateParams(), updateProduct, invalidateCacheMiddleware('products', (req, res, data) => {
+}), createProduct);
+router.patch("/:id", auth, validateParams(), invalidateCacheMiddleware('products', (req, res, data) => {
   // Extract category ID from the updated product
   return { categoryId: data?.data?.category };
-}));
-router.delete("/:id", auth, validateParams(), deleteProduct, invalidateCacheMiddleware('products'));
+}), updateProduct);
+router.delete("/:id", auth, validateParams(), invalidateCacheMiddleware('products'), deleteProduct);
 
 module.exports = router;

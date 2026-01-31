@@ -160,10 +160,22 @@ const deleteCachePattern = async (pattern) => {
       return false;
     }
     
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(...keys);
-      logger.info('Cache pattern deleted', { pattern, count: keys.length });
+    let cursor = '0';
+    let deletedCount = 0;
+    
+    // Use SCAN instead of KEYS for better performance
+    do {
+      const [newCursor, keys] = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = newCursor;
+      
+      if (keys.length > 0) {
+        await redisClient.del(...keys);
+        deletedCount += keys.length;
+      }
+    } while (cursor !== '0');
+    
+    if (deletedCount > 0) {
+      logger.info('Cache pattern deleted', { pattern, count: deletedCount });
     }
     return true;
   } catch (error) {
