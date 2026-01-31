@@ -8,14 +8,15 @@ const {
   getAllOrders,
   updateOrderStatus
 } = require('../controllers/orderController');
-const { handleRazorpayWebhook } = require('../controllers/webhookController');
+const { handleRazorpayWebhook, handleShiprocketWebhook } = require('../controllers/webhookController');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const validateParams = require('../middleware/validateParams');
 
 const router = express.Router();
 
-// Webhook route (no authentication, signature verified in controller)
+// Webhook routes (no authentication, signature verified in controller)
 router.post('/webhooks/razorpay', handleRazorpayWebhook);
+router.post('/webhooks/shiprocket', handleShiprocketWebhook);
 
 // User order routes (require authentication)
 router.post('/create', requireAuth, createOrder);

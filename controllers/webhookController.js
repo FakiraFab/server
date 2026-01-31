@@ -7,6 +7,137 @@ const logger = require("../utils/logger");
 const crypto = require("crypto");
 
 /**
+ * POST /api/webhooks/shiprocket
+ * Handle Shiprocket webhook events
+ */
+handleShiprocketWebhook = catchAsync(async (req, res, next) => {
+  const payload = req.body;
+
+  logger.info("Shiprocket webhook received", {
+    awb: payload.awb,
+    status: payload.current_status,
+    orderId: payload.order_id
+  });
+
+  try {
+    // Find order by AWB code or Shiprocket order ID
+    let order = null;
+    
+    if (payload.awb) {
+      order = await Order.findOne({ 'shipping.awbCode': payload.awb });
+    }
+    
+    if (!order && payload.order_id) {
+      order = await Order.findOne({ 'shipping.shiprocketOrderId': payload.order_id });
+    }
+
+    if (!order) {
+      logger.warn("Order not found for Shiprocket webhook", {
+        awb: payload.awb,
+        orderId: payload.order_id
+      });
+      return res.status(200).json({ status: "ok", message: "Order not found" });
+    }
+
+    // Map Shiprocket status to internal status
+    const statusMapping = {
+      'PICKED UP': { shipping: 'picked', order: 'processing' },
+      'PICKUP SCHEDULED': { shipping: 'picked', order: 'processing' },
+      'IN TRANSIT': { shipping: 'in_transit', order: 'shipped' },
+      'OUT FOR DELIVERY': { shipping: 'in_transit', order: 'shipped' },
+      'DELIVERED': { shipping: 'delivered', order: 'delivered' },
+      'RTO': { shipping: 'rto', order: 'returned' },
+      'RTO DELIVERED': { shipping: 'rto', order: 'returned' },
+      'CANCELLED': { shipping: 'cancelled', order: 'cancelled' }
+    };
+
+    const currentStatus = payload.current_status?.toUpperCase().trim();
+    const mappedStatus = statusMapping[currentStatus];
+
+    if (!mappedStatus) {
+      logger.warn("Unmapped Shiprocket status", {
+        status: currentStatus,
+        orderId: order.orderNumber
+      });
+      return res.status(200).json({ status: "ok", message: "Status not mapped" });
+    }
+
+    // Check if order status transition is valid
+    // Don't update to delivered/returned if already cancelled by user
+    const currentOrderStatus = order.orderStatus;
+    if ((currentOrderStatus === 'cancelled' || currentOrderStatus === 'returned') && 
+        (mappedStatus.order === 'delivered')) {
+      logger.warn("Invalid status transition - order already cancelled/returned", {
+        orderNumber: order.orderNumber,
+        currentStatus: currentOrderStatus,
+        attemptedStatus: mappedStatus.order
+      });
+      return res.status(200).json({ status: "ok", message: "Invalid status transition" });
+    }
+
+    // Update order shipping status
+    if (!order.shipping) {
+      order.shipping = {};
+    }
+    order.shipping.status = mappedStatus.shipping;
+
+    // Update AWB code if provided and not already set
+    if (payload.awb && !order.shipping.awbCode) {
+      order.shipping.awbCode = payload.awb;
+      
+      // Check if trackingNumber already exists and log warning if different
+      if (order.trackingNumber && order.trackingNumber !== payload.awb) {
+        logger.warn("Tracking number mismatch", {
+          orderNumber: order.orderNumber,
+          existingTrackingNumber: order.trackingNumber,
+          newAwbCode: payload.awb
+        });
+      }
+      
+      order.trackingNumber = payload.awb;
+    }
+
+    // Update courier information if provided
+    if (payload.courier_name && !order.shipping.courierName) {
+      order.shipping.courierName = payload.courier_name;
+      order.shippingProvider = payload.courier_name;
+    }
+
+    // Update order status based on shipment status
+    const oldOrderStatus = order.orderStatus;
+    order.orderStatus = mappedStatus.order;
+
+    // Set delivered date if delivered
+    if (mappedStatus.order === 'delivered' && !order.deliveredAt) {
+      order.deliveredAt = Date.now();
+    }
+
+    // Add status history
+    order.addStatusHistory(
+      mappedStatus.order,
+      `Shiprocket webhook: ${currentStatus}`
+    );
+
+    await order.save();
+
+    logger.info("Order updated from Shiprocket webhook", {
+      orderNumber: order.orderNumber,
+      oldStatus: oldOrderStatus,
+      newStatus: order.orderStatus,
+      shippingStatus: order.shipping.status
+    });
+
+    return res.status(200).json({ status: "ok" });
+  } catch (error) {
+    logger.error("Error processing Shiprocket webhook", {
+      error: error.message,
+      payload
+    });
+    return res.status(500).json({ status: "error", message: "Internal error" });
+  }
+});
+
+/**
  * POST /api/webhooks/razorpay
  * Handle Razorpay webhook events
  */
@@ -238,4 +369,5 @@ async function handleRefundCreated(payload) {
 
 module.exports = {
   handleRazorpayWebhook,
+  handleShiprocketWebhook,
 };
