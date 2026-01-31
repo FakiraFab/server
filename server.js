@@ -1,7 +1,9 @@
 const express = require("express");
 const dotenv = require("dotenv");
+// Load environment variables from .env file as early as possible
+dotenv.config();
 const connectDb = require("./config/db");
-const logger = require('./utils/logger');
+const logger = require("./utils/logger");
 const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
@@ -11,13 +13,12 @@ const workshopRegistrationRoutes = require("./routes/workshopRegistrationRoutes"
 const bannerRoutes = require("./routes/bannerRoutes");
 const reelRoutes = require("./routes/reelRoutes");
 const blogRoutes = require("./routes/blogRoutes");
+const authRoutes = require("./routes/authRoutes");
+const addressRoutes = require("./routes/addressRoutes");
+const cartRoutes = require("./routes/cartRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
-
-
-
-
-// Load environment variables from .env file
-dotenv.config();
 
 //Initialize express app
 const app = express();
@@ -38,37 +39,45 @@ app.use(express.json());
 // Lightweight request logging to stdout (captured by Render)
 app.use((req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => {
-    logger.info('HTTP request', {
+  res.on("finish", () => {
+    logger.info("HTTP request", {
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
-      durationMs: Date.now() - start
+      durationMs: Date.now() - start,
     });
   });
   next();
 });
 
-
+// console.log('Registering route: /api/auth');
+app.use("/api/auth", authRoutes);
+// console.log('Registering route: /api/addresses');
+app.use("/api/addresses", addressRoutes);
+// console.log('Registering route: /api/cart');
+app.use("/api/cart", cartRoutes);
+// console.log('Registering route: /api/wishlist');
+app.use("/api/wishlist", wishlistRoutes);
+// console.log('Registering route: /api/orders');
+app.use("/api/orders", orderRoutes);
 // console.log('Registering route: /api/products');
-app.use('/api/products', productRoutes);
+app.use("/api/products", productRoutes);
 // console.log('Registering route: /api/categories');
-app.use('/api/categories', categoryRoutes);
+app.use("/api/categories", categoryRoutes);
 // console.log('Registering route: /api/inquiry');
-app.use('/api/inquiry', inquiryRoutes);
+app.use("/api/inquiry", inquiryRoutes);
 // console.log('Registering route: /api/admin');
-app.use('/api/admin', adminRoutes);
+app.use("/api/admin", adminRoutes);
 // console.log('Registering route: /api/subcategories');
-app.use('/api/subcategories', subcategoryRoutes);
+app.use("/api/subcategories", subcategoryRoutes);
 // console.log('Registering route: /api/workshop');
-app.use('/api/workshop', workshopRegistrationRoutes);
+app.use("/api/workshop", workshopRegistrationRoutes);
 // console.log('Registering route: /api/banners');
-app.use('/api/banners', bannerRoutes);
+app.use("/api/banners", bannerRoutes);
 // console.log('Registering route: /api/reels');
-app.use('/api/reels', reelRoutes);
+app.use("/api/reels", reelRoutes);
 // console.log('Registering route: /api/blogs');
-app.use('/api/blogs', blogRoutes);
-
+app.use("/api/blogs", blogRoutes);
 
 // Welcome route
 app.get("/", (req, res) => {
@@ -84,11 +93,11 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 // Handle uncaught exceptions
-process.on('uncaughtException', err => {
-  logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', {
+process.on("uncaughtException", (err) => {
+  logger.error("UNCAUGHT EXCEPTION! 💥 Shutting down...", {
     name: err.name,
     message: err.message,
-    stack: err.stack
+    stack: err.stack,
   });
   process.exit(1);
 });
@@ -96,17 +105,16 @@ process.on('uncaughtException', err => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  logger.info('Server started', { env: process.env.NODE_ENV, port: PORT });
+  logger.info("Server started", { env: process.env.NODE_ENV, port: PORT });
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', err => {
-  logger.error('UNHANDLED REJECTION! 💥 Shutting down...', {
+process.on("unhandledRejection", (err) => {
+  logger.error("UNHANDLED REJECTION! 💥 Shutting down...", {
     name: err.name,
-    message: err.message
+    message: err.message,
   });
   server.close(() => {
     process.exit(1);
   });
 });
-

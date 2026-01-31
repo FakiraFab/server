@@ -1,7 +1,13 @@
 const express = require("express");
-const { getCategories, getCategoryById, createCategory, updateCategory, deleteCategory } = require("../controllers/categoryController");
+const {
+  getCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} = require("../controllers/categoryController");
 const validateParams = require("../middleware/validateParams");
-const auth = require('../middleware/auth');
+const { auth } = require("../middleware/auth");
 const router = express.Router();
 
 // Public routes
