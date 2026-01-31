@@ -1,12 +1,15 @@
-const {validationResult} = require('express-validator');
+const Joi = require('joi');
 
-const validate = (req,res,next)=>{
+const validate = (schema,property="body")=>{
+    return (req,res,next)=>{
+        const {error} = schema.validate(req[property]);
+        if(error){
+            return res.status(400).json({ success: false, message: error.details[0].message });
+        }
+        next();
+    };
 
-    const errors = validationResult(req);
-    if(!errors.isEmpty()){
-        return res.status(400).json({ success: false, errors: errors.array() });
-    }
-    next();
+   
 }
 
 module.exports = validate;
