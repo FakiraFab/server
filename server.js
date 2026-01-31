@@ -3,6 +3,8 @@ const dotenv = require("dotenv");
 // Load environment variables from .env file as early as possible
 dotenv.config();
 const connectDb = require("./config/db");
+const { initRedis, closeRedis } = require("./config/redis");
+const { warmCriticalCaches } = require("./utils/cacheWarming");
 const logger = require("./utils/logger");
 const productRoutes = require("./routes/productRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -18,6 +20,7 @@ const addressRoutes = require("./routes/addressRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const cacheRoutes = require("./routes/cacheRoutes");
 const { errorHandler, AppError } = require("./middleware/errorHandler");
 
 //Initialize express app
@@ -25,6 +28,16 @@ const app = express();
 
 // Connect to the database
 connectDb();
+
+// Initialize Redis
+initRedis();
+
+// Warm critical caches after a short delay to ensure DB is connected
+setTimeout(() => {
+  warmCriticalCaches().catch(err => {
+    logger.error('Failed to warm caches on startup', { error: err.message });
+  });
+}, 2000);
 
 const cors = require("cors");
 app.use(cors());
@@ -78,6 +91,8 @@ app.use("/api/banners", bannerRoutes);
 app.use("/api/reels", reelRoutes);
 // console.log('Registering route: /api/blogs');
 app.use("/api/blogs", blogRoutes);
+// console.log('Registering route: /api/cache');
+app.use("/api/cache", cacheRoutes);
 
 // Welcome route
 app.get("/", (req, res) => {
@@ -115,6 +130,19 @@ process.on("unhandledRejection", (err) => {
     message: err.message,
   });
   server.close(() => {
-    process.exit(1);
+    closeRedis().then(() => {
+      process.exit(1);
+    });
+  });
+});
+
+// Handle graceful shutdown
+process.on("SIGTERM", () => {
+  logger.info("SIGTERM received. Shutting down gracefully...");
+  server.close(() => {
+    closeRedis().then(() => {
+      logger.info("Process terminated");
+      process.exit(0);
+    });
   });
 });
