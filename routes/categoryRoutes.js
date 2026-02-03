@@ -8,15 +8,17 @@ const {
 } = require("../controllers/categoryController");
 const validateParams = require("../middleware/validateParams");
 const { auth } = require("../middleware/auth");
+const { cache } = require("../middleware/cache");
+const { invalidateCacheMiddleware } = require("../utils/cacheInvalidation");
 const router = express.Router();
 
 // Public routes
-router.get("/", getCategories);
+router.get("/", cache({ prefix: 'categories', ttl: 21600, includeParams: ['page', 'limit', 'sort'] }), getCategories);
 router.get("/:id", validateParams(), getCategoryById);
 
 // Protected admin routes
-router.post("/", auth, createCategory);
-router.patch("/:id", auth, validateParams(), updateCategory);
-router.delete("/:id", auth, validateParams(), deleteCategory);
+router.post("/", auth, invalidateCacheMiddleware('categories'), createCategory);
+router.patch("/:id", auth, validateParams(), invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })), updateCategory);
+router.delete("/:id", auth, validateParams(), invalidateCacheMiddleware('categories', (req) => ({ categoryId: req.params.id })), deleteCategory);
 
 module.exports = router;
